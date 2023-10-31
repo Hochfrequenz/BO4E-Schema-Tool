@@ -19,6 +19,7 @@ classifiers = [
 dependencies = [
     "requests",
     "pydantic",
+    "more-itertools"
 ]     # add all the dependencies from requirements.in here, too
 dynamic = ["readme", "version"]
 

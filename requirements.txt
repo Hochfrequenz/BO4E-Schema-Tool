@@ -12,6 +12,8 @@ charset-normalizer==3.3.1
     # via requests
 idna==3.4
     # via requests
+more-itertools==10.1.0
+    # via -r .\requirements.in
 pydantic==2.4.2
     # via -r .\requirements.in
 pydantic-core==2.10.1

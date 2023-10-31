@@ -5,7 +5,7 @@ Note that this actually supports mainly our BO4E-Schemas, but not necessarily th
 """
 from typing import Annotated, Any, Literal, Optional, Union
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class TypeBase(BaseModel):
@@ -17,6 +17,8 @@ class TypeBase(BaseModel):
     title: str = ""
     type: str = ""
     default: Any = None
+
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class Object(TypeBase):

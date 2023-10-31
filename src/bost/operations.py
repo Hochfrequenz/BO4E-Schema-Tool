@@ -1,14 +1,16 @@
 import re
-from typing import Any
+
+from more_itertools import first_true, one
 
 from bost.logger import logger
 from bost.schema import AnyOf, Array, Null, Object, Reference, TypeDefinition
 
 
 def optional_to_required(optional_field: AnyOf) -> TypeDefinition:
-    assert Null in optional_field.any_of, f"Expected {optional_field} to contain Null"
+    null_type = first_true(optional_field.any_of, pred=lambda item: isinstance(item, Null), default=None)
+    assert null_type is not None, f"Expected {optional_field} to contain Null"
     assert "default" in optional_field.__pydantic_fields_set__, f"Expected {optional_field} to have a default"
-    optional_field.any_of.remove(Null)
+    optional_field.any_of.remove(null_type)
     if optional_field.default is None and "default" in optional_field.__pydantic_fields_set__:
         optional_field.__pydantic_fields_set__.remove("default")
     if len(optional_field.any_of) == 1:
@@ -31,7 +33,7 @@ REF_REGEX = re.compile(r"src/bo4e_schemas/(bo|com|enum)/(\w+)\.json")
 
 
 def update_reference(field: Reference, own_module: tuple[str]):
-    match = REF_REGEX.match(field.ref)
+    match = REF_REGEX.search(field.ref)
     if match is None:
         logger.warning(f"Could not parse reference: {field.ref}")
         return
