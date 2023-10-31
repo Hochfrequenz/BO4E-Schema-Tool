@@ -5,12 +5,12 @@ from typing import TYPE_CHECKING
 import pytest
 import requests_mock
 
+from bost.__main__ import main
 from bost.schema import Object
 
 if TYPE_CHECKING:
-    from requests_mock import Request, Context
+    from requests_mock import Context, Request
 
-from bost.__main__ import main
 
 OUTPUT_DIR = Path(__file__).parent / "output/bo4e_schemas"
 CONFIG_FILE = Path(__file__).parent / "config_test.json"
@@ -26,7 +26,8 @@ class TestMain:
         with requests_mock.Mocker() as mocker:
             for pkg in ["bo", "com", "enum"]:
                 mocker.get(
-                    f"https://api.github.com/repos/Hochfrequenz/BO4E-Schemas/contents/src/bo4e_schemas/{pkg}?ref=v0.6.1-rc13",
+                    "https://api.github.com/repos/Hochfrequenz/BO4E-Schemas/contents/src/"
+                    f"bo4e_schemas/{pkg}?ref=v0.6.1-rc13",
                     text=(Path(__file__).parent / f"test_data/tree_query_response_{pkg}.json").read_text(),
                 )
 

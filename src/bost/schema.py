@@ -27,7 +27,7 @@ class Object(TypeBase):
     """
 
     additional_properties: Annotated[Literal[True], Field(alias="additionalProperties")]
-    properties: dict[str, "TypeDefinition"]
+    properties: dict[str, "SchemaType"]
     type: Literal["object"]
 
 
@@ -45,7 +45,7 @@ class Array(TypeBase):
     This pydantic class models the "array" type in a json schema validation file.
     """
 
-    items: "TypeDefinition"
+    items: "SchemaType"
     type: Literal["array"]
 
 
@@ -54,7 +54,7 @@ class AnyOf(TypeBase):
     This pydantic class models the "anyOf" keyword in a json schema validation file.
     """
 
-    any_of: Annotated[list["TypeDefinition"], Field(alias="anyOf")]
+    any_of: Annotated[list["SchemaType"], Field(alias="anyOf")]
 
 
 class String(TypeBase):
@@ -126,4 +126,4 @@ class Reference(TypeBase):
     ref: Annotated[str, Field(alias="$ref")]
 
 
-TypeDefinition = Union[Object, StrEnum, Array, AnyOf, String, Number, Integer, Boolean, Null, Reference]
+SchemaType = Union[Object, StrEnum, Array, AnyOf, String, Number, Integer, Boolean, Null, Reference]

@@ -1,3 +1,6 @@
+"""
+This module is the entry point for the bost command line interface.
+"""
 from pathlib import Path
 
 import click
@@ -40,10 +43,17 @@ from bost.schema import Object
     default=True,
 )
 def main_command_line(*args, **kwargs) -> None:
+    """
+    Entry point for the bost command line interface.
+    """
     main(*args, **kwargs)
 
 
+# pylint: disable=too-many-branches
 def main(output: Path, target_version: str, config_file: Path | None, update_refs: bool) -> None:
+    """
+    Pull the schemas from the BO4E repository and apply the operations defined in the config file.
+    """
     if config_file is not None:
         config = load_config(config_file)
     else:
