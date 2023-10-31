@@ -35,7 +35,8 @@ class TestMain:
                 match = re.search(r"src/bo4e_schemas/(bo|com|enum)/(\w+)\.json", request.path)
                 assert match is not None
                 return (
-                    Path(__file__).parent / f"test_data/bo4e_schemas/{match.group(1)}/{match.group(2)}.json"
+                    Path(__file__).parent
+                    / f"test_data/bo4e_schemas/{match.group(1)}/{match.group(2).capitalize()}.json"
                 ).read_text()
 
             mocker.get(
