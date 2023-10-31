@@ -1,3 +1,4 @@
 requests
 pydantic
 more-itertools
+click
