@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Iterable
 
 import requests
-from pydantic import BaseModel, TypeAdapter, computed_field
+from pydantic import BaseModel, TypeAdapter
 from requests import Response
 
 from bost.logger import logger
