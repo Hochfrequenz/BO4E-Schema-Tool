@@ -1,0 +1,99 @@
+{
+  "description": "Abbildung einer Preisstaffel mit regionaler Abgrenzung\n\n.. raw:: html\n\n    <object data=\"../_static/images/bo4e/com/RegionalePreisstaffel.svg\" type=\"image/svg+xml\"></object>\n\n.. HINT::\n    `RegionalePreisstaffel JSON Schema <https://json-schema.app/view/%23?url=https://raw.githubusercontent.com/Hochfrequenz/BO4E-python/main/json_schemas/com/RegionalePreisstaffel.json>`_",
+  "title": "RegionalePreisstaffel",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "_id": {
+      "title": " Id",
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "_version": {
+      "title": " Version",
+      "default": "0.6.1rc13",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "einheitspreis": {
+      "title": "Einheitspreis",
+      "default": null,
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "regionaleGueltigkeit": {
+      "default": null,
+      "anyOf": [
+        {
+          "$ref": "https://raw.githubusercontent.com/Hochfrequenz/BO4E-Schemas/v0.6.1-rc13/src/bo4e_schemas/com/RegionaleGueltigkeit.json"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "sigmoidparameter": {
+      "default": null,
+      "anyOf": [
+        {
+          "$ref": "https://raw.githubusercontent.com/Hochfrequenz/BO4E-Schemas/v0.6.1-rc13/src/bo4e_schemas/com/Sigmoidparameter.json"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "staffelgrenzeBis": {
+      "title": "Staffelgrenzebis",
+      "default": null,
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "staffelgrenzeVon": {
+      "title": "Staffelgrenzevon",
+      "default": null,
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+}

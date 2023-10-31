@@ -1,0 +1,66 @@
+{
+  "description": "Definition für eine Preisgarantie mit der Möglichkeit verschiedener Ausprägungen.\n\n.. raw:: html\n\n    <object data=\"../_static/images/bo4e/com/Preisgarantie.svg\" type=\"image/svg+xml\"></object>\n\n.. HINT::\n    `Preisgarantie JSON Schema <https://json-schema.app/view/%23?url=https://raw.githubusercontent.com/Hochfrequenz/BO4E-python/main/json_schemas/com/Preisgarantie.json>`_",
+  "title": "Preisgarantie",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "_id": {
+      "title": " Id",
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "_version": {
+      "title": " Version",
+      "default": "0.6.1rc13",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "beschreibung": {
+      "title": "Beschreibung",
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "preisgarantietyp": {
+      "default": null,
+      "anyOf": [
+        {
+          "$ref": "https://raw.githubusercontent.com/Hochfrequenz/BO4E-Schemas/v0.6.1-rc13/src/bo4e_schemas/enum/Preisgarantietyp.json"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "zeitlicheGueltigkeit": {
+      "default": null,
+      "anyOf": [
+        {
+          "$ref": "https://raw.githubusercontent.com/Hochfrequenz/BO4E-Schemas/v0.6.1-rc13/src/bo4e_schemas/com/Zeitraum.json"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+}

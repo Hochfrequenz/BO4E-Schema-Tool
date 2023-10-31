@@ -1,0 +1,142 @@
+{
+  "description": "Modell zur Abbildung eines kompakten Lastganges.\nIn diesem Modell werden die Messwerte in Form von Tagesvektoren mit fester Anzahl von Werten übertragen.\nDaher ist dieses BO nur zur Übertragung von äquidistanten Messwertverläufen geeignet.",
+  "title": "LastgangKompakt",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "_id": {
+      "title": " Id",
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "_typ": {
+      "default": "LASTGANG_KOMPAKT",
+      "anyOf": [
+        {
+          "$ref": "https://raw.githubusercontent.com/Hochfrequenz/BO4E-Schemas/v0.6.1-rc13/src/bo4e_schemas/enum/Typ.json"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "externeReferenzen": {
+      "title": "Externereferenzen",
+      "default": null,
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "$ref": "https://raw.githubusercontent.com/Hochfrequenz/BO4E-Schemas/v0.6.1-rc13/src/bo4e_schemas/com/ExterneReferenz.json"
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "lokationsId": {
+      "title": "Lokationsid",
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "lokationstyp": {
+      "title": "Lokationstyp",
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "messgroesse": {
+      "default": null,
+      "anyOf": [
+        {
+          "$ref": "https://raw.githubusercontent.com/Hochfrequenz/BO4E-Schemas/v0.6.1-rc13/src/bo4e_schemas/enum/Mengeneinheit.json"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "obisKennzahl": {
+      "title": "Obiskennzahl",
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "sparte": {
+      "default": null,
+      "anyOf": [
+        {
+          "$ref": "https://raw.githubusercontent.com/Hochfrequenz/BO4E-Schemas/v0.6.1-rc13/src/bo4e_schemas/enum/Sparte.json"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "tagesvektoren": {
+      "title": "Tagesvektoren",
+      "default": null,
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "$ref": "https://raw.githubusercontent.com/Hochfrequenz/BO4E-Schemas/v0.6.1-rc13/src/bo4e_schemas/com/Tagesvektor.json"
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "version": {
+      "title": "Version",
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "zeitintervall": {
+      "default": null,
+      "anyOf": [
+        {
+          "$ref": "https://raw.githubusercontent.com/Hochfrequenz/BO4E-Schemas/v0.6.1-rc13/src/bo4e_schemas/com/Zeitintervall.json"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+}

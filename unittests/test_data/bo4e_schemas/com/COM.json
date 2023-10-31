@@ -1,0 +1,32 @@
+{
+  "description": "base class for all components\n\n.. raw:: html\n\n    <object data=\"../_static/images/bo4e/com/COM.svg\" type=\"image/svg+xml\"></object>\n\n.. HINT::\n    `COM JSON Schema <https://json-schema.app/view/%23?url=https://raw.githubusercontent.com/Hochfrequenz/BO4E-python/main/json_schemas/com/COM.json>`_",
+  "title": "COM",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "_id": {
+      "title": " Id",
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "_version": {
+      "title": " Version",
+      "default": "0.6.1rc13",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+}

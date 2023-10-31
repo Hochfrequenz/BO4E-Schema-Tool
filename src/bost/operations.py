@@ -32,7 +32,7 @@ def add_additional_property(object: Object, additional_property: TypeDefinition,
 REF_REGEX = re.compile(r"src/bo4e_schemas/(bo|com|enum)/(\w+)\.json")
 
 
-def update_reference(field: Reference, own_module: tuple[str]):
+def update_reference(field: Reference, own_module: tuple[str, ...]):
     match = REF_REGEX.search(field.ref)
     if match is None:
         logger.warning(f"Could not parse reference: {field.ref}")
@@ -44,7 +44,7 @@ def update_reference(field: Reference, own_module: tuple[str]):
         field.ref = f"../{match.group(1)}/{match.group(2)}.json#"
 
 
-def update_references(obj: TypeDefinition, own_module: tuple[str]):
+def update_references(obj: TypeDefinition, own_module: tuple[str, ...]):
     def update_or_iter(_object: TypeDefinition):
         if isinstance(_object, Object):
             iter_object(_object)

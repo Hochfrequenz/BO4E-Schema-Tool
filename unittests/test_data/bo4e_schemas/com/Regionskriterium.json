@@ -1,0 +1,66 @@
+{
+  "description": "Komponente zur Abbildung eines Regionskriteriums\n\n.. raw:: html\n\n    <object data=\"../_static/images/bo4e/com/Regionskriterium.svg\" type=\"image/svg+xml\"></object>\n\n.. HINT::\n    `Regionskriterium JSON Schema <https://json-schema.app/view/%23?url=https://raw.githubusercontent.com/Hochfrequenz/BO4E-python/main/json_schemas/com/Regionskriterium.json>`_",
+  "title": "Regionskriterium",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "_id": {
+      "title": " Id",
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "_version": {
+      "title": " Version",
+      "default": "0.6.1rc13",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "gueltigkeitstyp": {
+      "default": null,
+      "anyOf": [
+        {
+          "$ref": "https://raw.githubusercontent.com/Hochfrequenz/BO4E-Schemas/v0.6.1-rc13/src/bo4e_schemas/enum/Gueltigkeitstyp.json"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "regionskriteriumtyp": {
+      "default": null,
+      "anyOf": [
+        {
+          "$ref": "https://raw.githubusercontent.com/Hochfrequenz/BO4E-Schemas/v0.6.1-rc13/src/bo4e_schemas/enum/Regionskriteriumtyp.json"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "wert": {
+      "title": "Wert",
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+}

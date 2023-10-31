@@ -74,7 +74,6 @@ def main(output: Path, target_version: str, config_file: Path | None, update_ref
             update_references(schema.schema_parsed, schema.module_path)
         schema.save()
         logger.info("Processed %s", schema)
-        break  # TODO: Remove this break
 
 
 if __name__ == "__main__":

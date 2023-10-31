@@ -1,0 +1,25 @@
+{
+  "required_fields": {
+    "Angebot": ["_id", "_typ", "_version", "angebotsgeber"]
+  },
+  "additional_fields": {
+    "Angebot": {
+      "foo": {
+        "type": "string",
+        "title": "Foo"
+      },
+      "bar": {
+        "anyOf": [
+            {
+                "type": "string"
+            },
+            {
+                "type": "null"
+            }
+        ],
+        "default": null,
+        "title": "Bar"
+      }
+    }
+  }
+}
