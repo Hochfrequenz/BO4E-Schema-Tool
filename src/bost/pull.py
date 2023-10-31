@@ -30,7 +30,6 @@ class SchemaMetadata(BaseModel):
     "e.g. ('bo', 'Angebot')"
     file_path: Path
 
-    @computed_field
     @property
     def module_name(self) -> str:
         """
@@ -45,7 +44,8 @@ class SchemaMetadata(BaseModel):
         """
         if self._schema is None:
             self._schema_response = self._download_schema()
-            self._schema = TypeAdapter(SchemaType).validate_json(self._schema_response.text)
+            self._schema = TypeAdapter(SchemaType).validate_json(self._schema_response.text)  # type: ignore[assignment]
+        assert self._schema is not None
         return self._schema
 
     def _download_schema(self) -> Response:

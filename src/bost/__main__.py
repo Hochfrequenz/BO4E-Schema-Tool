@@ -9,7 +9,7 @@ from bost.config import load_config
 from bost.logger import logger
 from bost.operations import add_additional_property, optional_to_required, update_references
 from bost.pull import resolve_latest_version, schema_iterator
-from bost.schema import Object
+from bost.schema import AnyOf, Object
 
 
 @click.command()
@@ -70,16 +70,19 @@ def main(output: Path, target_version: str, config_file: Path | None, update_ref
                 for field in config.required_fields[schema.class_name]:
                     if field not in schema.schema_parsed.properties:
                         raise ValueError(f"Config Error: Field {field} not found in {schema.class_name}")
+                    if not isinstance(schema.schema_parsed.properties[field], AnyOf):
+                        raise ValueError(f"Config Error: {field} is not optional: Not an AnyOf-object")
                     schema.schema_parsed.properties[field] = optional_to_required(
-                        schema.schema_parsed.properties[field]
+                        schema.schema_parsed.properties[field]  # type: ignore[arg-type]
+                        # mypy is too stupid to see that this is handled by the above statement
                     )
             if schema.class_name in config.additional_fields:
                 if not isinstance(schema.schema_parsed, Object):
                     raise ValueError(f"Config Error: {schema.class_name} is not an object")
-                for field_name, field in config.additional_fields[schema.class_name].items():
+                for field_name, field_def in config.additional_fields[schema.class_name].items():
                     if field_name in schema.schema_parsed.properties:
-                        raise ValueError(f"Config Error: Field {field} already existent in {schema.class_name}")
-                    add_additional_property(schema.schema_parsed, field, field_name)
+                        raise ValueError(f"Config Error: Field {field_name} already existent in {schema.class_name}")
+                    add_additional_property(schema.schema_parsed, field_def, field_name)
         if update_refs:
             update_references(schema.schema_parsed, schema.module_path)
         schema.save()
