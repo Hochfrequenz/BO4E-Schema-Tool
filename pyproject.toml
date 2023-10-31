@@ -16,7 +16,10 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
 ]
-dependencies = []     # add all the dependencies from requirements.in here, too
+dependencies = [
+    "requests",
+    "pydantic",
+]     # add all the dependencies from requirements.in here, too
 dynamic = ["readme", "version"]
 
 [project.urls]
