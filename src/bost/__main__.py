@@ -42,6 +42,8 @@ from bost.schema import AnyOf, Object
     is_flag=True,
     default=True,
 )
+@click.version_option(package_name="BO4E-Schema-Tool")
+@click.help_option()
 def main_command_line(*args, **kwargs) -> None:
     """
     Entry point for the bost command line interface.

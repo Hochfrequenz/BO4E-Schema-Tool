@@ -133,6 +133,6 @@ dmypy.json
 # vscode settings
 .vscode/
 
-src/_your_package_version.py
+src/_bo4e_schemas_tool_version.py
 
 unittests/output

@@ -28,6 +28,9 @@ dynamic = ["readme", "version"]
 Changelog = "https://github.com/Hochfrequenz/BO4E-Schema-Tool/releases"
 Homepage = "https://github.com/Hochfrequenz/BO4E-Schema-Tool"
 
+[project.scripts]
+bost = "bost.__main__:main_command_line"
+
 [tool.black]
 line-length = 120
 
