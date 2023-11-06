@@ -1,0 +1,91 @@
+{
+  "description": "Mit dieser Komponente können Tarifpreise verschiedener Typen abgebildet werden.\n\n.. raw:: html\n\n    <object data=\"../_static/images/bo4e/com/Tarifpreisposition.svg\" type=\"image/svg+xml\"></object>\n\n.. HINT::\n    `Tarifpreisposition JSON Schema <https://json-schema.app/view/%23?url=https://raw.githubusercontent.com/Hochfrequenz/BO4E-python/main/json_schemas/com/Tarifpreisposition.json>`_",
+  "title": "Tarifpreisposition",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "_id": {
+      "title": " Id",
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "_version": {
+      "title": " Version",
+      "default": "0.6.1rc13",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "bezugseinheit": {
+      "default": null,
+      "anyOf": [
+        {
+          "$ref": "https://raw.githubusercontent.com/Hochfrequenz/BO4E-Schemas/v0.6.1-rc13/src/bo4e_schemas/enum/Mengeneinheit.json"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "einheit": {
+      "default": null,
+      "anyOf": [
+        {
+          "$ref": "https://raw.githubusercontent.com/Hochfrequenz/BO4E-Schemas/v0.6.1-rc13/src/bo4e_schemas/enum/Waehrungseinheit.json"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "mengeneinheitstaffel": {
+      "default": null,
+      "anyOf": [
+        {
+          "$ref": "https://raw.githubusercontent.com/Hochfrequenz/BO4E-Schemas/v0.6.1-rc13/src/bo4e_schemas/enum/Mengeneinheit.json"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "preisstaffeln": {
+      "title": "Preisstaffeln",
+      "default": null,
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "$ref": "https://raw.githubusercontent.com/Hochfrequenz/BO4E-Schemas/v0.6.1-rc13/src/bo4e_schemas/com/Preisstaffel.json"
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "preistyp": {
+      "default": null,
+      "anyOf": [
+        {
+          "$ref": "https://raw.githubusercontent.com/Hochfrequenz/BO4E-Schemas/v0.6.1-rc13/src/bo4e_schemas/enum/Preistyp.json"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+}

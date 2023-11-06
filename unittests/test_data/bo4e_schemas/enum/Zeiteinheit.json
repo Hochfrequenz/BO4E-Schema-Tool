@@ -1,0 +1,17 @@
+{
+  "description": "Auflistung möglicher Einheiten zur Verwendung in zeitbezogenen Angaben.",
+  "title": "Zeiteinheit",
+  "type": "string",
+  "enum": [
+    "SEKUNDE",
+    "MINUTE",
+    "STUNDE",
+    "VIERTEL_STUNDE",
+    "TAG",
+    "WOCHE",
+    "MONAT",
+    "QUARTAL",
+    "HALBJAHR",
+    "JAHR"
+  ]
+}
