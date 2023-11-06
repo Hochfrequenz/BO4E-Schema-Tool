@@ -14,7 +14,7 @@ from bost.schema import SchemaType
 
 OWNER = "Hochfrequenz"
 REPO = "BO4E-Schemas"
-TIMEOUT = 10
+TIMEOUT = 10  # in seconds
 
 
 class SchemaMetadata(BaseModel):
