@@ -11,19 +11,17 @@ certifi==2023.7.22
 charset-normalizer==3.3.1
     # via requests
 click==8.1.7
-    # via -r .\requirements.in
-colorama==0.4.6
-    # via click
+    # via -r requirements.in
 idna==3.4
     # via requests
 more-itertools==10.1.0
-    # via -r .\requirements.in
+    # via -r requirements.in
 pydantic==2.4.2
-    # via -r .\requirements.in
+    # via -r requirements.in
 pydantic-core==2.10.1
     # via pydantic
 requests==2.31.0
-    # via -r .\requirements.in
+    # via -r requirements.in
 typing-extensions==4.8.0
     # via
     #   pydantic
