@@ -16,7 +16,7 @@ class AdditionalModel(BaseModel):
     """
 
     module: Literal["bo", "com", "enum"]
-    schema: Object | StrEnum | Reference
+    schema_parsed: Object | StrEnum | Reference
 
 
 class Config(BaseModel):

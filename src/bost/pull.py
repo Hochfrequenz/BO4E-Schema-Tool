@@ -123,7 +123,7 @@ def load_schema(path: Path) -> Object | StrEnum:
     """
     Load a schema from a file.
     """
-    return TypeAdapter(Union[Object, StrEnum]).validate_json(path.read_text())
+    return TypeAdapter(Union[Object, StrEnum]).validate_json(path.read_text())  # type: ignore[return-value]
 
 
 def additional_schema_iterator(
@@ -137,13 +137,13 @@ def additional_schema_iterator(
     assert config_path is not None, "Config path must be set if config is set"
 
     for additional_model in config.additional_models:
-        if isinstance(additional_model.schema, Reference):
-            reference_path = Path(additional_model.schema.ref)
+        if isinstance(additional_model.schema_parsed, Reference):
+            reference_path = Path(additional_model.schema_parsed.ref)
             if not reference_path.is_absolute():
                 reference_path = config_path.parent / reference_path
             schema_parsed = load_schema(reference_path)
         else:
-            schema_parsed = additional_model.schema
+            schema_parsed = additional_model.schema_parsed
 
         if schema_parsed.title == "":
             raise ValueError("Config Error: Title is required for additional models to determine the class name")
