@@ -52,4 +52,5 @@ class TestMain:
             assert (OUTPUT_DIR / "bo" / "Angebot.json").exists()
             assert (OUTPUT_DIR / "com" / "COM.json").exists()
             assert (OUTPUT_DIR / "enum" / "Typ.json").exists()
+            assert (OUTPUT_DIR / "bo" / "AdditionalModel.json").exists()
             assert Object.model_validate_json((OUTPUT_DIR / "bo" / "Angebot.json").read_text()).title == "Angebot"

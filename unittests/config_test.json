@@ -21,5 +21,13 @@
         "title": "Bar"
       }
     }
-  }
+  },
+  "additional_models": [
+    {
+      "module": "bo",
+      "schema": {
+        "$ref": "test_data/bo4e_schemas/additional_model.json"
+      }
+    }
+  ]
 }
