@@ -24,9 +24,9 @@ class Config(BaseModel):
     The config file model
     """
 
-    required_fields: dict[str, list[str]] = {}
-    additional_fields: dict[str, dict[str, SchemaType]] = {}
-    additional_models: list[AdditionalModel] = []
+    required_fields: Annotated[dict[str, list[str]], Field(alias="requiredFields")] = {}
+    additional_fields: Annotated[dict[str, dict[str, SchemaType]], Field(alias="additionalFields")] = {}
+    additional_models: Annotated[list[AdditionalModel], Field(alias="additionalModels")] = []
 
 
 def load_config(path: Path) -> Config:

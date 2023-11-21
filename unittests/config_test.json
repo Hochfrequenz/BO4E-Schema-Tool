@@ -1,8 +1,8 @@
 {
-  "required_fields": {
+  "requiredFields": {
     "Angebot": ["_id", "_typ", "_version", "angebotsgeber"]
   },
-  "additional_fields": {
+  "additionalFields": {
     "Angebot": {
       "foo": {
         "type": "string",
@@ -22,7 +22,7 @@
       }
     }
   },
-  "additional_models": [
+  "additionalModels": [
     {
       "module": "bo",
       "schema": {
