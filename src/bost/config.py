@@ -2,9 +2,9 @@
 Contains the model and a loading function to load the config file
 """
 from pathlib import Path
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from bost.logger import logger
 from bost.schema import Object, Reference, SchemaType, StrEnum
@@ -16,7 +16,7 @@ class AdditionalModel(BaseModel):
     """
 
     module: Literal["bo", "com", "enum"]
-    schema_parsed: Object | StrEnum | Reference
+    schema_parsed: Annotated[Object | StrEnum | Reference, Field(alias="schema")]
 
 
 class Config(BaseModel):
