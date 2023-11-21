@@ -129,8 +129,11 @@ def load_schema(path: Path) -> Object | StrEnum:
 def additional_schema_iterator(
     config: Config | None, config_path: Path | None, output: Path
 ) -> Iterable[SchemaMetadata]:
+    """
+    Get all additional models from the config file.
+    """
     if config is None:
-        return tuple()
+        return
     assert config_path is not None, "Config path must be set if config is set"
 
     for additional_model in config.additional_models:
@@ -143,7 +146,7 @@ def additional_schema_iterator(
             schema_parsed = additional_model.schema
 
         if schema_parsed.title == "":
-            raise ValueError(f"Config Error: Title is required for additional models to determine the class name")
+            raise ValueError("Config Error: Title is required for additional models to determine the class name")
 
         schema_metadata = SchemaMetadata(
             class_name=schema_parsed.title,
