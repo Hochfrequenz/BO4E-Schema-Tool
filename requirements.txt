@@ -16,9 +16,9 @@ idna==3.4
     # via requests
 more-itertools==10.1.0
     # via -r requirements.in
-pydantic==2.5.1
+pydantic==2.5.2
     # via -r requirements.in
-pydantic-core==2.14.3
+pydantic-core==2.14.5
     # via pydantic
 requests==2.31.0
     # via -r requirements.in
