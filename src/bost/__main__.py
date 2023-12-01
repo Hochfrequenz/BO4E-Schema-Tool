@@ -157,7 +157,7 @@ def transform_all_additional_enum_items(
             logger.info("Pattern '%s' matched %d fields", additional_item.pattern, matches)
 
 
-# pylint: disable=too-many-branches
+# pylint: disable=too-many-branches, too-many-arguments
 def main(
     output: Path,
     target_version: str,
