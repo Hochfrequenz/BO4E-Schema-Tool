@@ -59,6 +59,9 @@ def main_command_line(*args, **kwargs) -> None:
 
 
 def transform_all_required_fields(required_field_patters: list[str], schemas: dict[str, SchemaMetadata]):
+    """
+    Apply the required field patterns to all schemas.
+    """
     field_paths = [
         (field_path, field_name, schema)
         for schema in schemas.values()
@@ -70,12 +73,13 @@ def transform_all_required_fields(required_field_patters: list[str], schemas: di
         for field_path, field_name, schema in field_paths:
             if (
                 compiled_pattern.fullmatch(field_path)
+                and isinstance(schema.schema_parsed, Object)
                 and isinstance(schema.schema_parsed.properties[field_name], AnyOf)
                 and "default" in schema.schema_parsed.properties[field_name].__pydantic_fields_set__
             ):
                 matches += 1
                 schema.schema_parsed.properties[field_name] = optional_to_required(
-                    schema.schema_parsed.properties[field_name]
+                    schema.schema_parsed.properties[field_name]  # type: ignore[arg-type]
                 )
                 if field_name not in schema.schema_parsed.required:
                     if "required" not in schema.schema_parsed.__pydantic_fields_set__:
@@ -89,6 +93,9 @@ def transform_all_required_fields(required_field_patters: list[str], schemas: di
 
 
 def transform_all_additional_fields(additional_fields: list[AdditionalField], schemas: dict[str, SchemaMetadata]):
+    """
+    Apply the additional field patterns to all schemas and adds the respective field definition.
+    """
     schema_paths = [(schema.module_name, schema) for schema in schemas.values()]
     for additional_field in additional_fields:
         compiled_pattern = re.compile(additional_field.pattern)
@@ -120,6 +127,9 @@ def transform_all_additional_fields(additional_fields: list[AdditionalField], sc
 def transform_all_additional_enum_items(
     additional_enum_items: list[AdditionalEnumItem], schemas: dict[str, SchemaMetadata]
 ):
+    """
+    Apply the additional enum item patterns to all schemas and adds the respective enum items.
+    """
     schema_paths = [(schema.module_name, schema) for schema in schemas.values()]
     for additional_item in additional_enum_items:
         compiled_pattern = re.compile(additional_item.pattern)
@@ -166,7 +176,8 @@ def main(
         logger.info("Added all additional models")
         transform_all_required_fields(config.required_fields, schemas)
         logger.info("Transformed all required fields")
-        transform_all_additional_fields(config.additional_fields, schemas)
+        transform_all_additional_fields(config.additional_fields, schemas)  # type: ignore[arg-type]
+        # the load_config function ensures that the references are resolved.
         logger.info("Added all additional fields")
         transform_all_additional_enum_items(config.additional_enum_items, schemas)
         logger.info("Added all additional enum items")

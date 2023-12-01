@@ -5,7 +5,7 @@ import re
 from pathlib import Path
 from typing import Annotated, Literal, Union
 
-from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, field_validator
+from pydantic import BaseModel, Field, TypeAdapter, field_validator
 
 from bost.logger import logger
 from bost.schema import Object, Reference, SchemaType, StrEnum
@@ -21,11 +21,15 @@ class AdditionalField(BaseModel):
     field_def: Annotated[SchemaType, Field(alias="fieldDef")]
 
     @field_validator("pattern")
+    @classmethod
     def validate_pattern(cls, pattern):
+        """
+        Validates if the pattern is compilable as a regular expression
+        """
         try:
             re.compile(pattern)
-        except re.error:
-            raise ValueError(f"Invalid regular expression: {pattern}")
+        except re.error as error:
+            raise ValueError(f"Invalid regular expression: {pattern}") from error
         return pattern
 
 
@@ -38,11 +42,15 @@ class AdditionalEnumItem(BaseModel):
     items: list[str]
 
     @field_validator("pattern")
+    @classmethod
     def validate_pattern(cls, pattern):
+        """
+        Validates if the pattern is compilable as a regular expression
+        """
         try:
             re.compile(pattern)
-        except re.error:
-            raise ValueError(f"Invalid regular expression: {pattern}")
+        except re.error as error:
+            raise ValueError(f"Invalid regular expression: {pattern}") from error
         return pattern
 
 
@@ -61,12 +69,11 @@ class AdditionalModel(BaseModel):
         """
         if isinstance(self.schema_parsed, Object):
             return self.schema_parsed.title
-        elif isinstance(self.schema_parsed, StrEnum):
+        if isinstance(self.schema_parsed, StrEnum):
             return self.schema_parsed.title
-        elif isinstance(self.schema_parsed, Reference):
+        if isinstance(self.schema_parsed, Reference):
             return self.schema_parsed.ref.split("/")[-1].split(".")[0]
-        else:
-            raise ValueError(f"Unknown schema type: {self.schema_parsed}")
+        raise ValueError(f"Unknown schema type: {self.schema_parsed}")
 
 
 class Config(BaseModel):
@@ -80,12 +87,16 @@ class Config(BaseModel):
     additional_models: Annotated[list[AdditionalModel], Field(alias="additionalModels")] = []
 
     @field_validator("required_fields")
+    @classmethod
     def validate_required_field_patterns(cls, required_fields):
+        """
+        Validates if the patterns are compilable as a regular expression
+        """
         for pattern in required_fields:
             try:
                 re.compile(pattern)
-            except re.error:
-                raise ValueError(f"Invalid regular expression: {pattern}")
+            except re.error as error:
+                raise ValueError(f"Invalid regular expression: {pattern}") from error
         return required_fields
 
 
@@ -103,9 +114,9 @@ def load_config(path: Path) -> Config:
             if not reference_path.is_absolute():
                 reference_path = path.parent / reference_path
 
-            additional_fields = TypeAdapter(Union[AdditionalField, list[AdditionalField]]).validate_json(
-                reference_path.read_text()
-            )
+            additional_fields: Union[AdditionalField, list[AdditionalField]] = TypeAdapter(  # type: ignore[assignment]
+                Union[AdditionalField, list[AdditionalField]]
+            ).validate_json(reference_path.read_text(encoding="utf-8"))
             deletion_list.append(additional_field)
             if isinstance(additional_fields, list):
                 config.additional_fields.extend(additional_fields)

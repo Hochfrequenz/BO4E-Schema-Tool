@@ -11,7 +11,7 @@ from requests import Response
 
 from bost.config import Config
 from bost.logger import logger
-from bost.schema import Object, Reference, SchemaRootType, SchemaType, StrEnum
+from bost.schema import Object, Reference, SchemaRootType, StrEnum
 
 OWNER = "Hochfrequenz"
 REPO = "BO4E-Schemas"
@@ -45,7 +45,9 @@ class SchemaMetadata(BaseModel):
         """
         if self._schema is None:
             self._schema_response = self._download_schema()
-            self._schema = TypeAdapter(SchemaRootType).validate_json(self._schema_response.text)  # type: ignore[assignment]
+            self._schema = TypeAdapter(SchemaRootType).validate_json(  # type: ignore[assignment]
+                self._schema_response.text
+            )
         assert self._schema is not None
         return self._schema
 
