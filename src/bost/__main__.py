@@ -201,7 +201,7 @@ def main(
                 schema.schema_parsed.properties["_version"].default = target_version
         logger.info("Set default versions to %s", target_version)
 
-    if clear_output:
+    if clear_output and output.exists():
         shutil.rmtree(output)
         logger.info("Cleared output directory")
     for schema in schemas.values():
