@@ -6,7 +6,7 @@ import pytest
 import requests_mock
 
 from bost.__main__ import main
-from bost.schema import Object, String
+from bost.schema import Object, StrEnum, String
 
 if TYPE_CHECKING:
     from requests_mock import Context, Request
@@ -65,6 +65,7 @@ class TestMain:
             assert (OUTPUT_DIR / "com" / "COM.json").exists()
             assert (OUTPUT_DIR / "enum" / "Typ.json").exists()
             assert (OUTPUT_DIR / "bo" / "AdditionalModel.json").exists()
+
             angebot_schema = Object.model_validate_json((OUTPUT_DIR / "bo" / "Angebot.json").read_text())
             assert angebot_schema.title == "Angebot"
             assert "foo" in angebot_schema.properties
@@ -74,3 +75,8 @@ class TestMain:
             assert additional_model_schema.title == "AdditionalModel"
             assert additional_model_schema.properties["_version"].default == "v0.6.1-rc13"
             assert isinstance(additional_model_schema.properties["_version"], String)
+
+            typ_schema = StrEnum.model_validate_json((OUTPUT_DIR / "enum" / "Typ.json").read_text())
+            assert typ_schema.title == "Typ"
+            assert "foo" in typ_schema.enum
+            assert "bar" in typ_schema.enum

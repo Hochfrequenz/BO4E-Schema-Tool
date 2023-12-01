@@ -62,19 +62,6 @@ class AdditionalModel(BaseModel):
     module: Literal["bo", "com", "enum"]
     schema_parsed: Annotated[Object | StrEnum | Reference, Field(alias="schema")]
 
-    @property
-    def class_name(self):
-        """
-        The class name of the schema
-        """
-        if isinstance(self.schema_parsed, Object):
-            return self.schema_parsed.title
-        if isinstance(self.schema_parsed, StrEnum):
-            return self.schema_parsed.title
-        if isinstance(self.schema_parsed, Reference):
-            return self.schema_parsed.ref.split("/")[-1].split(".")[0]
-        raise ValueError(f"Unknown schema type: {self.schema_parsed}")
-
 
 class Config(BaseModel):
     """

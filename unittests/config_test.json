@@ -13,20 +13,16 @@
       }
     },
     {
-      "pattern": "bo\\.Angebot",
-      "fieldName": "bar",
-      "fieldDef": {
-        "anyOf": [
-          {
-            "type": "string"
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "default": null,
-        "title": "Bar"
-      }
+      "$ref": "test_data/bo4e_schemas/additional_field.json"
+    }
+  ],
+  "additionalEnumItems": [
+    {
+      "pattern": "enum\\.Typ",
+      "items": [
+        "foo",
+        "bar"
+      ]
     }
   ],
   "additionalModels": [
