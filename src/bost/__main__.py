@@ -1,15 +1,16 @@
 """
 This module is the entry point for the bost command line interface.
 """
+import re
 from pathlib import Path
 
 import click
 
-from bost.config import load_config
+from bost.config import AdditionalEnumItem, AdditionalField, load_config
 from bost.logger import logger
-from bost.operations import add_additional_property, optional_to_required, update_references
-from bost.pull import additional_schema_iterator, resolve_latest_version, schema_iterator
-from bost.schema import AnyOf, Object
+from bost.operations import add_additional_enum_items, add_additional_property, optional_to_required, update_references
+from bost.pull import SchemaMetadata, additional_schema_iterator, resolve_latest_version, schema_iterator
+from bost.schema import AnyOf, Object, StrEnum
 
 
 @click.command()
@@ -22,7 +23,7 @@ from bost.schema import AnyOf, Object
 )
 @click.option(
     "--target-version",
-    "-v",
+    "-t",
     help="Target BO4E version. Defaults to latest.",
     type=str,
     default="latest",
@@ -36,14 +37,20 @@ from bost.schema import AnyOf, Object
     default=None,
 )
 @click.option(
-    "--update-refs",
-    "-r",
-    help="Automatically update the references in the schema files",
+    "--update-refs/--no-update-refs",
+    "-r/-R",
+    help="Automatically update the references in the schema files - github URLs are replaced with relative paths",
+    is_flag=True,
+    default=True,
+)
+@click.option(
+    "--set-default-version/--no-set-default-version",
+    "-d/-D",
+    help="Automatically set or overrides the default version for '_version' fields with --target-version",
     is_flag=True,
     default=True,
 )
 @click.version_option(package_name="BO4E-Schema-Tool")
-@click.help_option()
 def main_command_line(*args, **kwargs) -> None:
     """
     Entry point for the bost command line interface.
@@ -51,8 +58,96 @@ def main_command_line(*args, **kwargs) -> None:
     main(*args, **kwargs)
 
 
+def transform_all_required_fields(required_field_patters: list[str], schemas: dict[str, SchemaMetadata]):
+    field_paths = [
+        (field_path, field_name, schema)
+        for schema in schemas.values()
+        for field_path, field_name in schema.field_paths()
+    ]
+    for pattern in required_field_patters:
+        compiled_pattern = re.compile(pattern)
+        matches = 0
+        for field_path, field_name, schema in field_paths:
+            if (
+                compiled_pattern.fullmatch(field_path)
+                and isinstance(schema.schema_parsed.properties[field_name], AnyOf)
+                and "default" in schema.schema_parsed.properties[field_name].__pydantic_fields_set__
+            ):
+                matches += 1
+                schema.schema_parsed.properties[field_name] = optional_to_required(
+                    schema.schema_parsed.properties[field_name]
+                )
+                if field_name not in schema.schema_parsed.required:
+                    if "required" not in schema.schema_parsed.__pydantic_fields_set__:
+                        schema.schema_parsed.required = []
+                    schema.schema_parsed.required.append(field_name)
+                logger.info("Applied pattern '%s' to field %s", pattern, field_path)
+        if matches == 0:
+            logger.warning("Pattern '%s' did not match any fields", pattern)
+        else:
+            logger.info("Pattern '%s' matched %d fields", pattern, matches)
+
+
+def transform_all_additional_fields(additional_fields: list[AdditionalField], schemas: dict[str, SchemaMetadata]):
+    schema_paths = [(schema.module_name, schema) for schema in schemas.values()]
+    for additional_field in additional_fields:
+        compiled_pattern = re.compile(additional_field.pattern)
+        matches = 0
+        for schema_path, schema in schema_paths:
+            if compiled_pattern.fullmatch(schema_path) and isinstance(schema.schema_parsed, Object):
+                matches += 1
+                add_additional_property(schema.schema_parsed, additional_field.field_def, additional_field.field_name)
+
+                if (
+                    "default" not in additional_field.field_def.__pydantic_fields_set__
+                    and additional_field.field_name not in schema.schema_parsed.required
+                ):
+                    if "required" not in schema.schema_parsed.__pydantic_fields_set__:
+                        schema.schema_parsed.required = []
+                    schema.schema_parsed.required.append(additional_field.field_name)
+                logger.info(
+                    "Applied pattern '%s' to schema %s. Added field %s",
+                    additional_field.pattern,
+                    schema_path,
+                    additional_field.field_name,
+                )
+        if matches == 0:
+            logger.warning("Pattern '%s' did not match any fields", additional_field.pattern)
+        else:
+            logger.info("Pattern '%s' matched %d fields", additional_field.pattern, matches)
+
+
+def transform_all_additional_enum_items(
+    additional_enum_items: list[AdditionalEnumItem], schemas: dict[str, SchemaMetadata]
+):
+    schema_paths = [(schema.module_name, schema) for schema in schemas.values()]
+    for additional_item in additional_enum_items:
+        compiled_pattern = re.compile(additional_item.pattern)
+        matches = 0
+        for schema_path, schema in schema_paths:
+            if compiled_pattern.fullmatch(schema_path) and isinstance(schema.schema_parsed, StrEnum):
+                matches += 1
+                add_additional_enum_items(schema.schema_parsed, additional_item.items)
+                logger.info(
+                    "Applied pattern '%s' to schema %s. Added enum items %s",
+                    additional_item.pattern,
+                    schema_path,
+                    str(additional_item.items),
+                )
+        if matches == 0:
+            logger.warning("Pattern '%s' did not match any fields", additional_item.pattern)
+        else:
+            logger.info("Pattern '%s' matched %d fields", additional_item.pattern, matches)
+
+
 # pylint: disable=too-many-branches
-def main(output: Path, target_version: str, config_file: Path | None, update_refs: bool) -> None:
+def main(
+    output: Path,
+    target_version: str,
+    config_file: Path | None,
+    update_refs: bool,
+    set_default_version: bool,
+) -> None:
     """
     Pull the schemas from the BO4E repository and apply the operations defined in the config file.
     """
@@ -64,35 +159,32 @@ def main(output: Path, target_version: str, config_file: Path | None, update_ref
     if target_version == "latest":
         target_version = resolve_latest_version()
 
-    for schema in schema_iterator(target_version, output):
-        if config is not None:
-            if schema.class_name in config.required_fields:
-                if not isinstance(schema.schema_parsed, Object):
-                    raise ValueError(f"Config Error: {schema.class_name} is not an object")
-                for field in config.required_fields[schema.class_name]:
-                    if field not in schema.schema_parsed.properties:
-                        raise ValueError(f"Config Error: Field {field} not found in {schema.class_name}")
-                    if not isinstance(schema.schema_parsed.properties[field], AnyOf):
-                        raise ValueError(f"Config Error: {field} is not optional: Not an AnyOf-object")
-                    schema.schema_parsed.properties[field] = optional_to_required(
-                        schema.schema_parsed.properties[field]  # type: ignore[arg-type]
-                        # mypy is too stupid to see that this is handled by the above statement
-                    )
-            if schema.class_name in config.additional_fields:
-                if not isinstance(schema.schema_parsed, Object):
-                    raise ValueError(f"Config Error: {schema.class_name} is not an object")
-                for field_name, field_def in config.additional_fields[schema.class_name].items():
-                    if field_name in schema.schema_parsed.properties:
-                        raise ValueError(f"Config Error: Field {field_name} already existent in {schema.class_name}")
-                    add_additional_property(schema.schema_parsed, field_def, field_name)
-        if update_refs:
-            update_references(schema.schema_parsed, schema.module_path)
-        schema.save()
-        logger.info("Processed %s", schema)
+    schemas = dict(schema_iterator(target_version, output))
 
-    for schema in additional_schema_iterator(config, config_file, output):
+    if config is not None:
+        schemas.update(additional_schema_iterator(config, config_file, output))
+        logger.info("Added all additional models")
+        transform_all_required_fields(config.required_fields, schemas)
+        logger.info("Transformed all required fields")
+        transform_all_additional_fields(config.additional_fields, schemas)
+        logger.info("Added all additional fields")
+        transform_all_additional_enum_items(config.additional_enum_items, schemas)
+        logger.info("Added all additional enum items")
+
+    if update_refs:
+        for schema in schemas.values():
+            update_references(schema.schema_parsed, schema.module_path)
+        logger.info("Updated github references")
+
+    if set_default_version:
+        for schema in schemas.values():
+            if isinstance(schema.schema_parsed, Object) and "_version" in schema.schema_parsed.properties:
+                schema.schema_parsed.properties["_version"].default = target_version
+        logger.info("Set default versions to %s", target_version)
+
+    for schema in schemas.values():
         schema.save()
-        logger.info("Processed %s", schema)
+        logger.info("Saved %s", schema.file_path)
 
 
 if __name__ == "__main__":

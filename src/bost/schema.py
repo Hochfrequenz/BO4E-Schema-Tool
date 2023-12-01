@@ -26,9 +26,10 @@ class Object(TypeBase):
     This pydantic class models the root of a json schema validation file.
     """
 
-    additional_properties: Annotated[Literal[True], Field(alias="additionalProperties")]
+    additional_properties: Annotated[Literal[True, False], Field(alias="additionalProperties")] = False
     properties: dict[str, "SchemaType"]
     type: Literal["object"]
+    required: list[str] = []
 
 
 class StrEnum(TypeBase):
@@ -57,6 +58,14 @@ class AnyOf(TypeBase):
     any_of: Annotated[list["SchemaType"], Field(alias="anyOf")]
 
 
+class AllOf(TypeBase):
+    """
+    This pydantic class models the "allOf" keyword in a json schema validation file.
+    """
+
+    all_of: Annotated[list["SchemaType"], Field(alias="allOf")]
+
+
 class String(TypeBase):
     """
     This pydantic class models the "string" type in a json schema validation file.
@@ -82,6 +91,7 @@ class String(TypeBase):
             "regex",
             "idn-email",
             "idn-hostname",
+            "binary",
         ]
     ] = None
 
@@ -126,4 +136,5 @@ class Reference(TypeBase):
     ref: Annotated[str, Field(alias="$ref")]
 
 
-SchemaType = Union[Object, StrEnum, Array, AnyOf, String, Number, Integer, Boolean, Null, Reference]
+SchemaType = Union[Object, StrEnum, Array, AnyOf, AllOf, String, Number, Integer, Boolean, Null, Reference]
+SchemaRootType = Union[Object, StrEnum]
