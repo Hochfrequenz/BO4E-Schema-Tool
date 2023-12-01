@@ -2,6 +2,7 @@
 This module is the entry point for the bost command line interface.
 """
 import re
+import shutil
 from pathlib import Path
 
 import click
@@ -49,6 +50,12 @@ from bost.schema import AnyOf, Object, StrEnum
     help="Automatically set or overrides the default version for '_version' fields with --target-version",
     is_flag=True,
     default=True,
+)
+@click.option(
+    "--clear-output",
+    help="Clear the output directory before saving the schemas",
+    is_flag=True,
+    default=False,
 )
 @click.version_option(package_name="BO4E-Schema-Tool")
 def main_command_line(*args, **kwargs) -> None:
@@ -157,6 +164,7 @@ def main(
     config_file: Path | None,
     update_refs: bool,
     set_default_version: bool,
+    clear_output: bool,
 ) -> None:
     """
     Pull the schemas from the BO4E repository and apply the operations defined in the config file.
@@ -193,6 +201,9 @@ def main(
                 schema.schema_parsed.properties["_version"].default = target_version
         logger.info("Set default versions to %s", target_version)
 
+    if clear_output:
+        shutil.rmtree(output)
+        logger.info("Cleared output directory")
     for schema in schemas.values():
         schema.save()
         logger.info("Saved %s", schema.file_path)
