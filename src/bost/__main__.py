@@ -199,6 +199,10 @@ def main(
         schema.save()
         logger.info("Saved %s", schema.file_path)
 
+    for schema in additional_schema_iterator(config, config_file, output):
+        schema.save()
+        logger.info("Processed %s", schema)
+
 
 if __name__ == "__main__":
     main_command_line()
