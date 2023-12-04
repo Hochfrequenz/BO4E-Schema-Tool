@@ -46,7 +46,9 @@ from bost.schema import AnyOf, Object, StrEnum
 @click.option(
     "--set-default-version/--no-set-default-version",
     "-d/-D",
-    help="Automatically set or overrides the default version for '_version' fields with --target-version",
+    help="Automatically set or overrides the default version for '_version' fields with --target-version. "
+    "This is especially useful if you want to define additional models which should "
+    "always have the correct version.",
     is_flag=True,
     default=True,
 )
