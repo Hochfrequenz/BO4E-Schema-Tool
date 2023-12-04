@@ -22,7 +22,6 @@
     },
     "_version": {
       "title": " Version",
-      "default": "0.6.1rc13",
       "anyOf": [
         {
           "type": "string"
@@ -30,7 +29,8 @@
         {
           "type": "null"
         }
-      ]
+      ],
+      "default": null
     },
     "testFieldA": {
       "title": "TestFieldA",

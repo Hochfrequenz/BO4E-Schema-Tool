@@ -6,7 +6,7 @@ import re
 from more_itertools import first_true
 
 from bost.logger import logger
-from bost.schema import AnyOf, Array, Null, Object, Reference, SchemaType
+from bost.schema import AllOf, AnyOf, Array, Null, Object, Reference, SchemaType, StrEnum
 
 
 def optional_to_required(optional_field: AnyOf) -> SchemaType:
@@ -41,6 +41,14 @@ def add_additional_property(obj: Object, additional_property: SchemaType, proper
     return obj
 
 
+def add_additional_enum_items(obj: StrEnum, additional_items: list[str]) -> StrEnum:
+    """
+    Add an additional item to an enum.
+    """
+    obj.enum.extend(additional_items)
+    return obj
+
+
 REF_REGEX = re.compile(r"src/bo4e_schemas/(bo|com|enum)/(\w+)\.json")
 
 
@@ -52,7 +60,7 @@ def update_reference(field: Reference, own_module: tuple[str, ...]):
     """
     match = REF_REGEX.search(field.ref)
     if match is None:
-        logger.warning("Could not parse reference: %s", field.ref)
+        logger.info("Reference unchanged. Could not parse reference: %s", field.ref)
         return
 
     if own_module[0] == match.group(1):
@@ -72,6 +80,8 @@ def update_references(obj: SchemaType, own_module: tuple[str, ...]):
             iter_object(_object)
         elif isinstance(_object, AnyOf):
             iter_any_of(_object)
+        elif isinstance(_object, AllOf):
+            iter_all_of(_object)
         elif isinstance(_object, Array):
             iter_array(_object)
         elif isinstance(_object, Reference):
@@ -83,6 +93,10 @@ def update_references(obj: SchemaType, own_module: tuple[str, ...]):
 
     def iter_any_of(_object: AnyOf):
         for item in _object.any_of:
+            update_or_iter(item)
+
+    def iter_all_of(_object: AllOf):
+        for item in _object.all_of:
             update_or_iter(item)
 
     def iter_array(_object: Array):

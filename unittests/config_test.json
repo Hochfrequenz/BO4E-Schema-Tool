@@ -1,27 +1,30 @@
 {
-  "requiredFields": {
-    "Angebot": ["_id", "_typ", "_version", "angebotsgeber"]
-  },
-  "additionalFields": {
-    "Angebot": {
-      "foo": {
+  "requiredFields": [
+    "\\w+\\.\\w+\\._(id|version|typ)",
+    "bo\\.Angebot\\.angebotsgeber"
+  ],
+  "additionalFields": [
+    {
+      "pattern": "bo\\.Angebot",
+      "fieldName": "foo",
+      "fieldDef": {
         "type": "string",
         "title": "Foo"
-      },
-      "bar": {
-        "anyOf": [
-            {
-                "type": "string"
-            },
-            {
-                "type": "null"
-            }
-        ],
-        "default": null,
-        "title": "Bar"
       }
+    },
+    {
+      "$ref": "test_data/bo4e_schemas/additional_field.json"
     }
-  },
+  ],
+  "additionalEnumItems": [
+    {
+      "pattern": "enum\\.Typ",
+      "items": [
+        "foo",
+        "bar"
+      ]
+    }
+  ],
   "additionalModels": [
     {
       "module": "bo",

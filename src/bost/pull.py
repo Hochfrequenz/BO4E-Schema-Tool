@@ -6,12 +6,12 @@ from pathlib import Path
 from typing import Iterable, Union
 
 import requests
-from pydantic import BaseModel, TypeAdapter
+from pydantic import BaseModel, TypeAdapter, ValidationError
 from requests import Response
 
 from bost.config import Config
 from bost.logger import logger
-from bost.schema import Object, Reference, SchemaType, StrEnum
+from bost.schema import Object, Reference, SchemaRootType, StrEnum
 
 OWNER = "Hochfrequenz"
 REPO = "BO4E-Schemas"
@@ -24,7 +24,7 @@ class SchemaMetadata(BaseModel):
     """
 
     _schema_response: Response | None = None
-    _schema: SchemaType | None = None
+    _schema: SchemaRootType | None = None
     class_name: str
     download_url: str
     module_path: tuple[str, ...]
@@ -39,18 +39,20 @@ class SchemaMetadata(BaseModel):
         return ".".join(self.module_path)
 
     @property
-    def schema_parsed(self) -> SchemaType:
+    def schema_parsed(self) -> SchemaRootType:
         """
         The parsed schema. Downloads the schema from GitHub if needed.
         """
         if self._schema is None:
             self._schema_response = self._download_schema()
-            self._schema = TypeAdapter(SchemaType).validate_json(self._schema_response.text)  # type: ignore[assignment]
+            self._schema = TypeAdapter(SchemaRootType).validate_json(  # type: ignore[assignment]
+                self._schema_response.text
+            )
         assert self._schema is not None
         return self._schema
 
     @schema_parsed.setter
-    def schema_parsed(self, value: SchemaType):
+    def schema_parsed(self, value: SchemaRootType):
         self._schema = value
 
     def _download_schema(self) -> Response:
@@ -69,6 +71,15 @@ class SchemaMetadata(BaseModel):
         """
         self.file_path.parent.mkdir(parents=True, exist_ok=True)
         self.file_path.write_text(self.schema_parsed.model_dump_json(indent=2, exclude_unset=True, by_alias=True))
+
+    def field_paths(self) -> Iterable[tuple[str, str]]:
+        """
+        Get all field paths of the schema.
+        """
+        if not isinstance(self.schema_parsed, Object):
+            return
+        for field_name in self.schema_parsed.properties:
+            yield ".".join((self.module_name, field_name)), field_name
 
     def __str__(self):
         return self.module_name
@@ -97,10 +108,11 @@ def resolve_latest_version() -> str:
 SCHEMA_CACHE: dict[tuple[str, ...], SchemaMetadata] = {}
 
 
-def schema_iterator(version: str, output: Path) -> Iterable[SchemaMetadata]:
+def schema_iterator(version: str, output: Path) -> Iterable[tuple[str, SchemaMetadata]]:
     """
     Get all files from the BO4E-Schemas repository.
-    This generator function yields SchemaMetadata objects containing various information about the schema.
+    This generator function yields tuples of class name and SchemaMetadata objects containing various information about
+    the schema.
     """
     for pkg in ("bo", "com", "enum"):
         response = _github_tree_query(pkg, version)
@@ -116,19 +128,23 @@ def schema_iterator(version: str, output: Path) -> Iterable[SchemaMetadata]:
                     module_path=module_path,
                     file_path=output / relative_path,
                 )
-            yield SCHEMA_CACHE[module_path]
+            yield SCHEMA_CACHE[module_path].class_name, SCHEMA_CACHE[module_path]
 
 
 def load_schema(path: Path) -> Object | StrEnum:
     """
     Load a schema from a file.
     """
-    return TypeAdapter(Union[Object, StrEnum]).validate_json(path.read_text())  # type: ignore[return-value]
+    try:
+        return TypeAdapter(Union[Object, StrEnum]).validate_json(path.read_text())  # type: ignore[return-value]
+    except ValidationError as error:
+        logger.error("Could not load schema from %s:", path, exc_info=error)
+        raise
 
 
 def additional_schema_iterator(
     config: Config | None, config_path: Path | None, output: Path
-) -> Iterable[SchemaMetadata]:
+) -> Iterable[tuple[str, SchemaMetadata]]:
     """
     Get all additional models from the config file.
     """
@@ -155,4 +171,4 @@ def additional_schema_iterator(
             file_path=output / f"{additional_model.module}/{schema_parsed.title}.json",
         )
         schema_metadata.schema_parsed = schema_parsed
-        yield schema_metadata
+        yield schema_metadata.class_name, schema_metadata

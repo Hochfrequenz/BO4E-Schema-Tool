@@ -1,6 +1,8 @@
 from pathlib import Path
 
-from bost.config import load_config
+from more_itertools import one
+
+from bost.config import AdditionalField, load_config
 from bost.operations import add_additional_property, optional_to_required, update_reference, update_references
 from bost.schema import Object, String
 
@@ -53,7 +55,12 @@ class TestOperations:
             (Path(__file__).parent / "test_data/bo4e_schemas/bo/Angebot.json").read_text()
         )
         config = load_config(Path(__file__).parent / "config_test.json")
-        add_additional_property(angebot, config.additional_fields["Angebot"]["foo"], "foo")
+        angebot_field_foo = one(
+            additional_field
+            for additional_field in config.additional_fields
+            if isinstance(additional_field, AdditionalField) and additional_field.field_name == "foo"
+        )
+        add_additional_property(angebot, angebot_field_foo.field_def, angebot_field_foo.field_name)
 
         assert "foo" in angebot.properties
-        assert angebot.properties["foo"] == config.additional_fields["Angebot"]["foo"]
+        assert angebot.properties["foo"] == angebot_field_foo.field_def
