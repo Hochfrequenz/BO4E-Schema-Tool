@@ -2,11 +2,21 @@
 Contains the model and a loading function to load the config file
 """
 from pathlib import Path
+from typing import Annotated, Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from bost.logger import logger
-from bost.schema import SchemaType
+from bost.schema import Object, Reference, SchemaType, StrEnum
+
+
+class AdditionalModel(BaseModel):
+    """
+    A model that is added to the schema
+    """
+
+    module: Literal["bo", "com", "enum"]
+    schema_parsed: Annotated[Object | StrEnum | Reference, Field(alias="schema")]
 
 
 class Config(BaseModel):
@@ -14,8 +24,9 @@ class Config(BaseModel):
     The config file model
     """
 
-    required_fields: dict[str, list[str]]
-    additional_fields: dict[str, dict[str, SchemaType]]
+    required_fields: Annotated[dict[str, list[str]], Field(alias="requiredFields")] = {}
+    additional_fields: Annotated[dict[str, dict[str, SchemaType]], Field(alias="additionalFields")] = {}
+    additional_models: Annotated[list[AdditionalModel], Field(alias="additionalModels")] = []
 
 
 def load_config(path: Path) -> Config:

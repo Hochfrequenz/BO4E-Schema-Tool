@@ -8,7 +8,7 @@ import click
 from bost.config import load_config
 from bost.logger import logger
 from bost.operations import add_additional_property, optional_to_required, update_references
-from bost.pull import resolve_latest_version, schema_iterator
+from bost.pull import additional_schema_iterator, resolve_latest_version, schema_iterator
 from bost.schema import AnyOf, Object
 
 
@@ -87,6 +87,10 @@ def main(output: Path, target_version: str, config_file: Path | None, update_ref
                     add_additional_property(schema.schema_parsed, field_def, field_name)
         if update_refs:
             update_references(schema.schema_parsed, schema.module_path)
+        schema.save()
+        logger.info("Processed %s", schema)
+
+    for schema in additional_schema_iterator(config, config_file, output):
         schema.save()
         logger.info("Processed %s", schema)
 

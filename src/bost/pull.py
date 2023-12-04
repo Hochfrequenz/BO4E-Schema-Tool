@@ -3,14 +3,15 @@ Contains functions to pull the BO4E-Schemas from GitHub.
 """
 from functools import lru_cache
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, Union
 
 import requests
 from pydantic import BaseModel, TypeAdapter
 from requests import Response
 
+from bost.config import Config
 from bost.logger import logger
-from bost.schema import SchemaType
+from bost.schema import Object, Reference, SchemaType, StrEnum
 
 OWNER = "Hochfrequenz"
 REPO = "BO4E-Schemas"
@@ -47,6 +48,10 @@ class SchemaMetadata(BaseModel):
             self._schema = TypeAdapter(SchemaType).validate_json(self._schema_response.text)  # type: ignore[assignment]
         assert self._schema is not None
         return self._schema
+
+    @schema_parsed.setter
+    def schema_parsed(self, value: SchemaType):
+        self._schema = value
 
     def _download_schema(self) -> Response:
         """
@@ -112,3 +117,42 @@ def schema_iterator(version: str, output: Path) -> Iterable[SchemaMetadata]:
                     file_path=output / relative_path,
                 )
             yield SCHEMA_CACHE[module_path]
+
+
+def load_schema(path: Path) -> Object | StrEnum:
+    """
+    Load a schema from a file.
+    """
+    return TypeAdapter(Union[Object, StrEnum]).validate_json(path.read_text())  # type: ignore[return-value]
+
+
+def additional_schema_iterator(
+    config: Config | None, config_path: Path | None, output: Path
+) -> Iterable[SchemaMetadata]:
+    """
+    Get all additional models from the config file.
+    """
+    if config is None:
+        return
+    assert config_path is not None, "Config path must be set if config is set"
+
+    for additional_model in config.additional_models:
+        if isinstance(additional_model.schema_parsed, Reference):
+            reference_path = Path(additional_model.schema_parsed.ref)
+            if not reference_path.is_absolute():
+                reference_path = config_path.parent / reference_path
+            schema_parsed = load_schema(reference_path)
+        else:
+            schema_parsed = additional_model.schema_parsed
+
+        if schema_parsed.title == "":
+            raise ValueError("Config Error: Title is required for additional models to determine the class name")
+
+        schema_metadata = SchemaMetadata(
+            class_name=schema_parsed.title,
+            download_url="",
+            module_path=(additional_model.module, schema_parsed.title),
+            file_path=output / f"{additional_model.module}/{schema_parsed.title}.json",
+        )
+        schema_metadata.schema_parsed = schema_parsed
+        yield schema_metadata
