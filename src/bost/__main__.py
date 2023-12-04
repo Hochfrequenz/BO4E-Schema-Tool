@@ -47,7 +47,9 @@ from bost.schema import AnyOf, Object, StrEnum
 @click.option(
     "--set-default-version/--no-set-default-version",
     "-d/-D",
-    help="Automatically set or overrides the default version for '_version' fields with --target-version",
+    help="Automatically set or overrides the default version for '_version' fields with --target-version. "
+    "This is especially useful if you want to define additional models which should "
+    "always have the correct version.",
     is_flag=True,
     default=True,
 )
@@ -208,9 +210,15 @@ def main(
         schema.save()
         logger.info("Saved %s", schema.file_path)
 
-    for schema in additional_schema_iterator(config, config_file, output):
+    if set_default_version:
+        for schema in schemas.values():
+            if isinstance(schema.schema_parsed, Object) and "_version" in schema.schema_parsed.properties:
+                schema.schema_parsed.properties["_version"].default = target_version
+        logger.info("Set default versions to %s", target_version)
+
+    for schema in schemas.values():
         schema.save()
-        logger.info("Processed %s", schema)
+        logger.info("Saved %s", schema.file_path)
 
 
 if __name__ == "__main__":
