@@ -25,6 +25,7 @@ class TestMain:
             config_file=None,
             update_refs=True,
             set_default_version=False,
+            clear_output=True,
         )
 
     def test_main_with_mocks(self):
@@ -59,6 +60,7 @@ class TestMain:
                 config_file=CONFIG_FILE,
                 update_refs=True,
                 set_default_version=True,
+                clear_output=True,
             )
 
             assert (OUTPUT_DIR / "bo" / "Angebot.json").exists()

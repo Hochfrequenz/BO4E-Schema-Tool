@@ -2,6 +2,7 @@
 This module is the entry point for the bost command line interface.
 """
 import re
+import shutil
 from pathlib import Path
 
 import click
@@ -51,6 +52,12 @@ from bost.schema import AnyOf, Object, StrEnum
     "always have the correct version.",
     is_flag=True,
     default=True,
+)
+@click.option(
+    "--clear-output",
+    help="Clear the output directory before saving the schemas",
+    is_flag=True,
+    default=False,
 )
 @click.version_option(package_name="BO4E-Schema-Tool")
 def main_command_line(*args, **kwargs) -> None:
@@ -152,13 +159,14 @@ def transform_all_additional_enum_items(
             logger.info("Pattern '%s' matched %d fields", additional_item.pattern, matches)
 
 
-# pylint: disable=too-many-branches
+# pylint: disable=too-many-branches, too-many-arguments
 def main(
     output: Path,
     target_version: str,
     config_file: Path | None,
     update_refs: bool,
     set_default_version: bool,
+    clear_output: bool,
 ) -> None:
     """
     Pull the schemas from the BO4E repository and apply the operations defined in the config file.
@@ -188,6 +196,19 @@ def main(
         for schema in schemas.values():
             update_references(schema.schema_parsed, schema.module_path)
         logger.info("Updated github references")
+
+    if set_default_version:
+        for schema in schemas.values():
+            if isinstance(schema.schema_parsed, Object) and "_version" in schema.schema_parsed.properties:
+                schema.schema_parsed.properties["_version"].default = target_version
+        logger.info("Set default versions to %s", target_version)
+
+    if clear_output and output.exists():
+        shutil.rmtree(output)
+        logger.info("Cleared output directory")
+    for schema in schemas.values():
+        schema.save()
+        logger.info("Saved %s", schema.file_path)
 
     if set_default_version:
         for schema in schemas.values():
