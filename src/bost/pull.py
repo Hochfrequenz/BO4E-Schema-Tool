@@ -70,7 +70,9 @@ class SchemaMetadata(BaseModel):
         Save the parsed schema to the file defined by `file_path`. Creates parent directories if needed.
         """
         self.file_path.parent.mkdir(parents=True, exist_ok=True)
-        self.file_path.write_text(self.schema_parsed.model_dump_json(indent=2, exclude_unset=True, by_alias=True))
+        self.file_path.write_text(
+            self.schema_parsed.model_dump_json(indent=2, exclude_unset=True, by_alias=True), encoding="utf-8"
+        )
 
     def field_paths(self) -> Iterable[tuple[str, str]]:
         """
