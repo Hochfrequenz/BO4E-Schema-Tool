@@ -104,6 +104,15 @@ class Number(TypeBase):
     type: Literal["number"]
 
 
+class Decimal(TypeBase):
+    """
+    This pydantic class models the "decimal" type in a json schema validation file.
+    """
+
+    type: Literal["string"]
+    format: Literal["decimal"]
+
+
 class Integer(TypeBase):
     """
     This pydantic class models the "integer" type in a json schema validation file.
@@ -136,5 +145,5 @@ class Reference(TypeBase):
     ref: Annotated[str, Field(alias="$ref")]
 
 
-SchemaType = Union[Object, StrEnum, Array, AnyOf, AllOf, String, Number, Integer, Boolean, Null, Reference]
+SchemaType = Union[Object, StrEnum, Array, AnyOf, AllOf, String, Number, Decimal, Integer, Boolean, Null, Reference]
 SchemaRootType = Union[Object, StrEnum]
