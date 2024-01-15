@@ -119,6 +119,12 @@ def resolve_latest_version() -> str:
 
 
 def is_cache_dir_valid(cache_dir: Path | None, target_version: str) -> bool:
+    """
+    Check if the cache directory is valid.
+    It is valid if it is empty or doesn't exist yet.
+    If it is not empty but the version file is missing, raise an FileNotFoundError.
+    If it doesn't contain the correct version the cache will be cleared.
+    """
     if cache_dir is None:
         return False
     cache_dir.mkdir(parents=True, exist_ok=True)
@@ -143,6 +149,9 @@ def is_cache_dir_valid(cache_dir: Path | None, target_version: str) -> bool:
 
 
 def get_cached_file(relative_path: Path, cache_dir: Path | None) -> Path | None:
+    """
+    Get the path to the cached file specific to a schema if the cache directory is set.
+    """
     if cache_dir is None:
         return None
     return cache_dir / relative_path
