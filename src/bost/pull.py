@@ -1,6 +1,7 @@
 """
 Contains functions to pull the BO4E-Schemas from GitHub.
 """
+import shutil
 from functools import lru_cache
 from pathlib import Path
 from typing import Iterable, Union
@@ -23,13 +24,13 @@ class SchemaMetadata(BaseModel):
     Metadata about a schema file
     """
 
-    _schema_response: Response | None = None
     _schema: SchemaRootType | None = None
     class_name: str
     download_url: str
     module_path: tuple[str, ...]
     "e.g. ('bo', 'Angebot')"
     file_path: Path
+    cached_path: Path | None
 
     @property
     def module_name(self) -> str:
@@ -44,10 +45,16 @@ class SchemaMetadata(BaseModel):
         The parsed schema. Downloads the schema from GitHub if needed.
         """
         if self._schema is None:
-            self._schema_response = self._download_schema()
-            self._schema = TypeAdapter(SchemaRootType).validate_json(  # type: ignore[assignment]
-                self._schema_response.text
-            )
+            if self.cached_path is not None and self.cached_path.exists():
+                self._schema = TypeAdapter(SchemaRootType).validate_json(  # type: ignore[assignment]
+                    self.cached_path.read_text()
+                )
+                logger.info("Loaded %s from cache", self.cached_path)
+            else:
+                schema_response = self._download_schema()
+                self._schema = TypeAdapter(SchemaRootType).validate_json(  # type: ignore[assignment]
+                    schema_response.text
+                )
         assert self._schema is not None
         return self._schema
 
@@ -63,6 +70,10 @@ class SchemaMetadata(BaseModel):
         if response.status_code != 200:
             raise ValueError(f"Could not download schema from {self.download_url}: {response.text}")
         logger.info("Downloaded %s", self.download_url)
+        if self.cached_path is not None:
+            self.cached_path.parent.mkdir(parents=True, exist_ok=True)
+            self.cached_path.write_text(response.text)
+            logger.debug("Cached %s", self.cached_path)
         return response
 
     def save(self):
@@ -107,10 +118,49 @@ def resolve_latest_version() -> str:
     return response.json()["tag_name"]
 
 
+def is_cache_dir_valid(cache_dir: Path | None, target_version: str) -> bool:
+    """
+    Check if the cache directory is valid.
+    It is valid if it is empty or doesn't exist yet.
+    If it is not empty but the version file is missing, raise an FileNotFoundError.
+    If it doesn't contain the correct version the cache will be cleared.
+    """
+    if cache_dir is None:
+        return False
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    version_file = cache_dir / ".version"
+    if not any(cache_dir.iterdir()):
+        version_file.write_text(f"bo4e_version={target_version}")
+        return True
+    if not version_file.exists():
+        raise FileNotFoundError("Cache directory is not empty but does not contain a version file")
+    cached_version = version_file.read_text().split("=")[1]
+    if cached_version != target_version:
+        logger.warning(
+            "Version mismatch: The cache directory contains version %s but the target version is %s. "
+            "The files will be downloaded again and the cache will be overwritten.",
+            cached_version,
+            target_version,
+        )
+        shutil.rmtree(cache_dir)
+        cache_dir.mkdir()
+        version_file.write_text(f"bo4e_version={target_version}")
+    return True
+
+
+def get_cached_file(relative_path: Path, cache_dir: Path | None) -> Path | None:
+    """
+    Get the path to the cached file specific to a schema if the cache directory is set.
+    """
+    if cache_dir is None:
+        return None
+    return cache_dir / relative_path
+
+
 SCHEMA_CACHE: dict[tuple[str, ...], SchemaMetadata] = {}
 
 
-def schema_iterator(version: str, output: Path) -> Iterable[tuple[str, SchemaMetadata]]:
+def schema_iterator(version: str, output: Path, cache_dir: Path | None) -> Iterable[tuple[str, SchemaMetadata]]:
     """
     Get all files from the BO4E-Schemas repository.
     This generator function yields tuples of class name and SchemaMetadata objects containing various information about
@@ -129,6 +179,7 @@ def schema_iterator(version: str, output: Path) -> Iterable[tuple[str, SchemaMet
                     download_url=file["download_url"],
                     module_path=module_path,
                     file_path=output / relative_path,
+                    cached_path=get_cached_file(relative_path, cache_dir),
                 )
             yield SCHEMA_CACHE[module_path].class_name, SCHEMA_CACHE[module_path]
 
@@ -171,6 +222,7 @@ def additional_schema_iterator(
             download_url="",
             module_path=(additional_model.module, schema_parsed.title),
             file_path=output / f"{additional_model.module}/{schema_parsed.title}.json",
+            cached_path=None,
         )
         schema_metadata.schema_parsed = schema_parsed
         yield schema_metadata.class_name, schema_metadata
