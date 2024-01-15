@@ -23,13 +23,13 @@ class SchemaMetadata(BaseModel):
     Metadata about a schema file
     """
 
-    _schema_response: Response | None = None
     _schema: SchemaRootType | None = None
     class_name: str
     download_url: str
     module_path: tuple[str, ...]
     "e.g. ('bo', 'Angebot')"
     file_path: Path
+    cached_path: Path | None
 
     @property
     def module_name(self) -> str:
@@ -44,10 +44,16 @@ class SchemaMetadata(BaseModel):
         The parsed schema. Downloads the schema from GitHub if needed.
         """
         if self._schema is None:
-            self._schema_response = self._download_schema()
-            self._schema = TypeAdapter(SchemaRootType).validate_json(  # type: ignore[assignment]
-                self._schema_response.text
-            )
+            if self.cached_path is not None and self.cached_path.exists():
+                self._schema = TypeAdapter(SchemaRootType).validate_json(  # type: ignore[assignment]
+                    self.cached_path.read_text()
+                )
+                logger.info("Loaded %s from cache", self.cached_path)
+            else:
+                schema_response = self._download_schema()
+                self._schema = TypeAdapter(SchemaRootType).validate_json(  # type: ignore[assignment]
+                    schema_response.text
+                )
         assert self._schema is not None
         return self._schema
 
@@ -63,6 +69,10 @@ class SchemaMetadata(BaseModel):
         if response.status_code != 200:
             raise ValueError(f"Could not download schema from {self.download_url}: {response.text}")
         logger.info("Downloaded %s", self.download_url)
+        if self.cached_path is not None:
+            self.cached_path.parent.mkdir(parents=True, exist_ok=True)
+            self.cached_path.write_text(response.text)
+            logger.debug("Cached %s", self.cached_path)
         return response
 
     def save(self):
@@ -107,10 +117,16 @@ def resolve_latest_version() -> str:
     return response.json()["tag_name"]
 
 
+def get_cached_file(relative_path: Path, cache_dir: Path | None) -> Path | None:
+    if cache_dir is None:
+        return None
+    return cache_dir / relative_path
+
+
 SCHEMA_CACHE: dict[tuple[str, ...], SchemaMetadata] = {}
 
 
-def schema_iterator(version: str, output: Path) -> Iterable[tuple[str, SchemaMetadata]]:
+def schema_iterator(version: str, output: Path, cache_dir: Path | None) -> Iterable[tuple[str, SchemaMetadata]]:
     """
     Get all files from the BO4E-Schemas repository.
     This generator function yields tuples of class name and SchemaMetadata objects containing various information about
@@ -129,6 +145,7 @@ def schema_iterator(version: str, output: Path) -> Iterable[tuple[str, SchemaMet
                     download_url=file["download_url"],
                     module_path=module_path,
                     file_path=output / relative_path,
+                    cached_path=get_cached_file(relative_path, cache_dir),
                 )
             yield SCHEMA_CACHE[module_path].class_name, SCHEMA_CACHE[module_path]
 
@@ -171,6 +188,7 @@ def additional_schema_iterator(
             download_url="",
             module_path=(additional_model.module, schema_parsed.title),
             file_path=output / f"{additional_model.module}/{schema_parsed.title}.json",
+            cached_path=None,
         )
         schema_metadata.schema_parsed = schema_parsed
         yield schema_metadata.class_name, schema_metadata

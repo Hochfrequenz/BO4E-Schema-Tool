@@ -13,6 +13,7 @@ if TYPE_CHECKING:
 
 
 OUTPUT_DIR = Path(__file__).parent / "output/bo4e_schemas"
+CACHE_DIR = Path(__file__).parent / "output/bo4e_cache"
 CONFIG_FILE = Path(__file__).parent / "config_test.json"
 
 
@@ -26,6 +27,7 @@ class TestMain:
             update_refs=True,
             set_default_version=False,
             clear_output=True,
+            cache_dir=None,
         )
 
     def test_main_with_mocks(self):
@@ -61,6 +63,7 @@ class TestMain:
                 update_refs=True,
                 set_default_version=True,
                 clear_output=True,
+                cache_dir=CACHE_DIR,
             )
 
             assert (OUTPUT_DIR / "bo" / "Angebot.json").exists()

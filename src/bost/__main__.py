@@ -59,6 +59,14 @@ from bost.schema import AnyOf, Object, StrEnum
     is_flag=True,
     default=False,
 )
+@click.option(
+    "--cache-dir",
+    help="Path to the optional cache dir. If not set the cache is disabled. "
+    "It will cache the raw schema files downloaded from github.",
+    type=click.Path(file_okay=False, path_type=Path),
+    required=False,
+    default=None,
+)
 @click.version_option(package_name="BO4E-Schema-Tool")
 def main_command_line(*args, **kwargs) -> None:
     """
@@ -163,10 +171,11 @@ def transform_all_additional_enum_items(
 def main(
     output: Path,
     target_version: str,
-    config_file: Path | None,
     update_refs: bool,
     set_default_version: bool,
     clear_output: bool,
+    config_file: Path | None = None,
+    cache_dir: Path | None = None,
 ) -> None:
     """
     Pull the schemas from the BO4E repository and apply the operations defined in the config file.
@@ -179,7 +188,7 @@ def main(
     if target_version == "latest":
         target_version = resolve_latest_version()
 
-    schemas = dict(schema_iterator(target_version, output))
+    schemas = dict(schema_iterator(target_version, output, cache_dir))
 
     if config is not None:
         schemas.update(additional_schema_iterator(config, config_file, output))
