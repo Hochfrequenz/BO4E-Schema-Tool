@@ -1,6 +1,7 @@
 """
 Contains functions to pull the BO4E-Schemas from GitHub.
 """
+import shutil
 from functools import lru_cache
 from pathlib import Path
 from typing import Iterable, Union
@@ -115,6 +116,30 @@ def resolve_latest_version() -> str:
     response = requests.get(f"https://api.github.com/repos/{OWNER}/{REPO}/releases/latest", timeout=TIMEOUT)
     response.raise_for_status()
     return response.json()["tag_name"]
+
+
+def is_cache_dir_valid(cache_dir: Path | None, target_version: str) -> bool:
+    if cache_dir is None:
+        return False
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    version_file = cache_dir / ".version"
+    if not any(cache_dir.iterdir()):
+        version_file.write_text(f"bo4e_version={target_version}")
+        return True
+    if not version_file.exists():
+        raise FileNotFoundError("Cache directory is not empty but does not contain a version file")
+    cached_version = version_file.read_text().split("=")[1]
+    if cached_version != target_version:
+        logger.warning(
+            "Version mismatch: The cache directory contains version %s but the target version is %s. "
+            "The files will be downloaded again and the cache will be overwritten.",
+            cached_version,
+            target_version,
+        )
+        shutil.rmtree(cache_dir)
+        cache_dir.mkdir()
+        version_file.write_text(f"bo4e_version={target_version}")
+    return True
 
 
 def get_cached_file(relative_path: Path, cache_dir: Path | None) -> Path | None:
