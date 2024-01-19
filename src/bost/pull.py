@@ -1,8 +1,8 @@
 """
 Contains functions to pull the BO4E-Schemas from GitHub.
 """
-import shutil
 from functools import lru_cache
+from itertools import chain
 from pathlib import Path
 from typing import Iterable, Union
 
@@ -10,6 +10,7 @@ import requests
 from pydantic import BaseModel, TypeAdapter, ValidationError
 from requests import Response
 
+from bost.cache import CACHE_FILE_NAME, CacheData, get_cached_file, get_cached_file_tree, save_cache
 from bost.config import Config
 from bost.logger import logger
 from bost.schema import Object, Reference, SchemaRootType, StrEnum
@@ -98,14 +99,40 @@ class SchemaMetadata(BaseModel):
         return self.module_name
 
 
+class SchemaInFileTree(BaseModel):
+    """
+    A schema in the file tree returned by the GitHub API. Only contains the relevant information.
+    """
+
+    name: str
+    path: str
+    download_url: str
+
+
+class SchemaLists(BaseModel):
+    """
+    A list of schemas
+    """
+
+    bo: list[SchemaInFileTree]
+    com: list[SchemaInFileTree]
+    enum: list[SchemaInFileTree]
+
+
+CacheData.model_rebuild()
+
+
 @lru_cache(maxsize=None)
-def _github_tree_query(pkg: str, version: str) -> Response:
+def _github_tree_query(pkg: str, version: str) -> list[SchemaInFileTree]:
     """
     Query the github tree api for a specific package and version.
     """
-    return requests.get(
+    response = requests.get(
         f"https://api.github.com/repos/{OWNER}/{REPO}/contents/src/bo4e_schemas/{pkg}?ref={version}", timeout=TIMEOUT
     )
+    if response.status_code != 200:
+        raise ValueError(f"Could not query repository tree from {response.request.url}: {response.text}")
+    return TypeAdapter(list[SchemaInFileTree]).validate_json(response.text)
 
 
 @lru_cache(maxsize=1)
@@ -118,43 +145,20 @@ def resolve_latest_version() -> str:
     return response.json()["tag_name"]
 
 
-def is_cache_dir_valid(cache_dir: Path | None, target_version: str) -> bool:
+def get_schema_list(version: str, cache_dir: Path | None) -> SchemaLists:
     """
-    Check if the cache directory is valid.
-    It is valid if it is empty or doesn't exist yet.
-    If it is not empty but the version file is missing, raise an FileNotFoundError.
-    If it doesn't contain the correct version the cache will be cleared.
+    Get all files metadata from the BO4E-Schemas repository or from cache.
     """
-    if cache_dir is None:
-        return False
-    cache_dir.mkdir(parents=True, exist_ok=True)
-    version_file = cache_dir / ".version"
-    if not any(cache_dir.iterdir()):
-        version_file.write_text(f"bo4e_version={target_version}")
-        return True
-    if not version_file.exists():
-        raise FileNotFoundError("Cache directory is not empty but does not contain a version file")
-    cached_version = version_file.read_text().split("=")[1]
-    if cached_version != target_version:
-        logger.warning(
-            "Version mismatch: The cache directory contains version %s but the target version is %s. "
-            "The files will be downloaded again and the cache will be overwritten.",
-            cached_version,
-            target_version,
-        )
-        shutil.rmtree(cache_dir)
-        cache_dir.mkdir()
-        version_file.write_text(f"bo4e_version={target_version}")
-    return True
+    if cache_dir is not None:
+        possible_schemas = get_cached_file_tree(cache_dir)
+        if possible_schemas is not None:
+            return possible_schemas
 
+    schemas = SchemaLists(**{pkg: _github_tree_query(pkg, version) for pkg in ("bo", "com", "enum")})
+    if cache_dir is not None:
+        save_cache(cache_dir / CACHE_FILE_NAME, version=version, file_tree=schemas)
 
-def get_cached_file(relative_path: Path, cache_dir: Path | None) -> Path | None:
-    """
-    Get the path to the cached file specific to a schema if the cache directory is set.
-    """
-    if cache_dir is None:
-        return None
-    return cache_dir / relative_path
+    return schemas
 
 
 SCHEMA_CACHE: dict[tuple[str, ...], SchemaMetadata] = {}
@@ -166,22 +170,21 @@ def schema_iterator(version: str, output: Path, cache_dir: Path | None) -> Itera
     This generator function yields tuples of class name and SchemaMetadata objects containing various information about
     the schema.
     """
-    for pkg in ("bo", "com", "enum"):
-        response = _github_tree_query(pkg, version)
-        for file in response.json():
-            if not file["name"].endswith(".json"):
-                continue
-            relative_path = Path(file["path"]).relative_to("src/bo4e_schemas")
-            module_path = (*relative_path.parent.parts, relative_path.stem)
-            if module_path not in SCHEMA_CACHE:
-                SCHEMA_CACHE[module_path] = SchemaMetadata(
-                    class_name=relative_path.stem,
-                    download_url=file["download_url"],
-                    module_path=module_path,
-                    file_path=output / relative_path,
-                    cached_path=get_cached_file(relative_path, cache_dir),
-                )
-            yield SCHEMA_CACHE[module_path].class_name, SCHEMA_CACHE[module_path]
+    schemas = get_schema_list(version, cache_dir)
+    for file in chain(schemas.bo, schemas.com, schemas.enum):
+        if not file.name.endswith(".json"):
+            continue
+        relative_path = Path(file.path).relative_to("src/bo4e_schemas")
+        module_path = (*relative_path.parent.parts, relative_path.stem)
+        if module_path not in SCHEMA_CACHE:
+            SCHEMA_CACHE[module_path] = SchemaMetadata(
+                class_name=relative_path.stem,
+                download_url=file.download_url,
+                module_path=module_path,
+                file_path=output / relative_path,
+                cached_path=get_cached_file(relative_path, cache_dir),
+            )
+        yield SCHEMA_CACHE[module_path].class_name, SCHEMA_CACHE[module_path]
 
 
 def load_schema(path: Path) -> Object | StrEnum:

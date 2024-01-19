@@ -7,16 +7,11 @@ from pathlib import Path
 
 import click
 
+from bost.cache import is_cache_dir_valid
 from bost.config import AdditionalEnumItem, AdditionalField, load_config
 from bost.logger import logger
 from bost.operations import add_additional_enum_items, add_additional_property, optional_to_required, update_references
-from bost.pull import (
-    SchemaMetadata,
-    additional_schema_iterator,
-    is_cache_dir_valid,
-    resolve_latest_version,
-    schema_iterator,
-)
+from bost.pull import SchemaMetadata, additional_schema_iterator, resolve_latest_version, schema_iterator
 from bost.schema import AnyOf, Object, StrEnum
 
 

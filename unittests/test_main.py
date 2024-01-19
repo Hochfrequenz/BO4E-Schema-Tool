@@ -31,6 +31,7 @@ class TestMain:
         )
 
     def test_main_with_mocks(self):
+        test_cache = True
         # Mock request URLs
         with requests_mock.Mocker() as mocker:
             for pkg in ["bo", "com", "enum"]:
@@ -65,6 +66,17 @@ class TestMain:
                 clear_output=True,
                 cache_dir=CACHE_DIR,
             )
+            if test_cache:
+                # This tests other parts of the cache implementation
+                main(
+                    output=OUTPUT_DIR,
+                    target_version="v0.6.1-rc13",
+                    config_file=CONFIG_FILE,
+                    update_refs=True,
+                    set_default_version=True,
+                    clear_output=True,
+                    cache_dir=CACHE_DIR,
+                )
 
             assert (OUTPUT_DIR / "bo" / "Angebot.json").exists()
             assert (OUTPUT_DIR / "com" / "COM.json").exists()
