@@ -1,4 +1,5 @@
 import re
+import shutil
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -57,6 +58,11 @@ class TestMain:
                 text=mock_get_schema,
             )
 
+            if test_cache:
+                # Delete the cache dir if present to ensure a dry run at first.
+                # Somehow, when creating a release and the cli tests are running, there seems to be cached data.
+                # I don't know what's going on there.
+                shutil.rmtree(CACHE_DIR, ignore_errors=True)
             main(
                 output=OUTPUT_DIR,
                 target_version="v0.6.1-rc13",
