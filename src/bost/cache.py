@@ -39,7 +39,7 @@ def load_cache(cache_file: Path) -> CacheData:
 
     # pylint: disable=global-statement
     global CACHED_DATA
-    if CACHED_DATA is not None:
+    if "CACHED_DATA" in globals():
         return CACHED_DATA
 
     CACHED_DATA = CacheData.model_validate_json(cache_file.read_text(encoding="utf-8"))
