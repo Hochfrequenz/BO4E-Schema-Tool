@@ -124,7 +124,8 @@ def _github_tree_query(pkg: str, version: str) -> list[SchemaInFileTree]:
     response = requests.get(
         f"https://api.github.com/repos/{OWNER}/{REPO}/contents/src/bo4e_schemas/{pkg}?ref={version}", timeout=TIMEOUT
     )
-    response.raise_for_status()
+    if response.status_code != 200:
+        raise ValueError(f"Could not query repository tree from {response.request.url}: {response.text}")
     return TypeAdapter(list[SchemaInFileTree]).validate_json(response.text)
 
 
