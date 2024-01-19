@@ -7,10 +7,10 @@ from pathlib import Path
 from typing import Iterable, Union
 
 import requests
-from pydantic import BaseModel, ConfigDict, TypeAdapter, ValidationError
+from pydantic import BaseModel, TypeAdapter, ValidationError
 from requests import Response
 
-from bost.cache import CACHE_FILE_NAME, get_cached_file, get_cached_file_tree, save_cache
+from bost.cache import CACHE_FILE_NAME, CacheData, get_cached_file, get_cached_file_tree, save_cache
 from bost.config import Config
 from bost.logger import logger
 from bost.schema import Object, Reference, SchemaRootType, StrEnum
@@ -100,7 +100,10 @@ class SchemaMetadata(BaseModel):
 
 
 class SchemaInFileTree(BaseModel):
-    model_config = ConfigDict(extra="allow")
+    """
+    A schema in the file tree returned by the GitHub API. Only contains the relevant information.
+    """
+
     name: str
     path: str
     download_url: str
@@ -114,6 +117,9 @@ class SchemaLists(BaseModel):
     bo: list[SchemaInFileTree]
     com: list[SchemaInFileTree]
     enum: list[SchemaInFileTree]
+
+
+CacheData.model_rebuild()
 
 
 @lru_cache(maxsize=None)
