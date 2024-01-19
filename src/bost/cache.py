@@ -113,7 +113,7 @@ def is_cache_dir_valid(cache_dir: Path | None, target_version: str) -> bool:
     if not any(cache_dir.iterdir()):
         return True
     if not cache_file.exists():
-        raise FileNotFoundError("Cache directory is not empty but does not contain a version file")
+        raise FileNotFoundError("Cache directory is not empty but does not contain a .cache file")
     cached_version = load_cache(cache_file).version
     if cached_version != target_version:
         logger.warning(
