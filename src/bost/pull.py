@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Iterable, Union
 
 import requests
+from github import Github, ContentFile
 from pydantic import BaseModel, TypeAdapter, ValidationError
 from requests import Response
 
@@ -109,6 +110,7 @@ class SchemaInFileTree(BaseModel):
     download_url: str
 
 
+
 class SchemaLists(BaseModel):
     """
     A list of schemas
@@ -123,16 +125,16 @@ CacheData.model_rebuild()
 
 
 @lru_cache(maxsize=None)
-def _github_tree_query(pkg: str, version: str) -> list[SchemaInFileTree]:
+def _github_tree_query(pkg: str, version: str) -> list[ContentFile]:
     """
     Query the github tree api for a specific package and version.
     """
-    response = requests.get(
-        f"https://api.github.com/repos/{OWNER}/{REPO}/contents/src/bo4e_schemas/{pkg}?ref={version}", timeout=TIMEOUT
-    )
-    if response.status_code != 200:
-        raise ValueError(f"Could not query repository tree from {response.request.url}: {response.text}")
-    return TypeAdapter(list[SchemaInFileTree]).validate_json(response.text)
+    repo = Github().get_repo(f"{OWNER}/{REPO}")
+    try:
+        response = repo.get_contents(f"src/bo4e_schemas/{pkg}", ref=version)
+    except Exception as exception:
+        raise ValueError(f"Could not query repository tree from bo4e_schemas/{pkg}")
+    return response
 
 
 @lru_cache(maxsize=1)
