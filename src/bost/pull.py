@@ -1,13 +1,14 @@
 """
 Contains functions to pull the BO4E-Schemas from GitHub.
 """
+import json
 from functools import lru_cache
 from itertools import chain
 from pathlib import Path
 from typing import Iterable, Union
 
 import requests
-from github import Github, ContentFile
+from github import ContentFile, Github
 from pydantic import BaseModel, TypeAdapter, ValidationError
 from requests import Response
 
@@ -110,7 +111,6 @@ class SchemaInFileTree(BaseModel):
     download_url: str
 
 
-
 class SchemaLists(BaseModel):
     """
     A list of schemas
@@ -125,15 +125,12 @@ CacheData.model_rebuild()
 
 
 @lru_cache(maxsize=None)
-def _github_tree_query(pkg: str, version: str) -> list[ContentFile]:
+def _github_tree_query(pkg: str, version: str) -> list[SchemaInFileTree]:
     """
     Query the github tree api for a specific package and version.
     """
     repo = Github().get_repo(f"{OWNER}/{REPO}")
-    try:
-        response = repo.get_contents(f"src/bo4e_schemas/{pkg}", ref=version)
-    except Exception as exception:
-        raise ValueError(f"Could not query repository tree from bo4e_schemas/{pkg}")
+    response = repo.get_contents(f"src/bo4e_schemas/{pkg}", ref=version)
     return response
 
 
