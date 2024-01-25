@@ -116,9 +116,9 @@ class SchemaLists(BaseModel):
     A list of schemas
     """
 
-    bo: list[SchemaInFileTree]
-    com: list[SchemaInFileTree]
-    enum: list[SchemaInFileTree]
+    bo: list[ContentFile]
+    com: list[ContentFile]
+    enum: list[ContentFile]
 
 
 CacheData.model_rebuild()
