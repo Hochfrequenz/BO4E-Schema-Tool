@@ -2,11 +2,14 @@ import re
 import shutil
 from pathlib import Path
 from typing import TYPE_CHECKING
+from unittest.mock import Mock, patch
 
 import pytest
 import requests_mock
+from pydantic import parse_obj_as, TypeAdapter
 
 from bost.__main__ import main
+from bost.pull import get_github_repo_info, SchemaInFileTree, _github_tree_query
 from bost.schema import Object, StrEnum, String
 
 if TYPE_CHECKING:
@@ -17,10 +20,21 @@ OUTPUT_DIR = Path(__file__).parent / "output/bo4e_schemas"
 CACHE_DIR = Path(__file__).parent / "output/bo4e_cache"
 CONFIG_FILE = Path(__file__).parent / "config_test.json"
 
+def side_effect(url, ref):
+    bo_models = TypeAdapter(list[SchemaInFileTree]).validate_json(
+        (Path(__file__).parent / f"test_data/tree_query_response_bo.json").read_text())
+    com_models = TypeAdapter(list[SchemaInFileTree]).validate_json(
+        (Path(__file__).parent / f"test_data/tree_query_response_com.json").read_text())
+    enum_models = TypeAdapter(list[SchemaInFileTree]).validate_json(
+        (Path(__file__).parent / f"test_data/tree_query_response_enum.json").read_text())
+    values = {("src/bo4e_schemas/bo", "version"): [model for model in bo_models],
+              ("src/bo4e_schemas/com", "version"): [model for model in com_models],
+              ("src/bo4e_schemas/com", "version"): [model for model in enum_models]}
+    return values[(url, ref)]
 
 class TestMain:
     def test_main_without_mocks(self):
-        pytest.skip("Unmocked test is skipped in CI")
+        #pytest.skip("Unmocked test is skipped in CI")
         main(
             output=OUTPUT_DIR,
             target_version="v0.6.1-rc13",
@@ -30,6 +44,22 @@ class TestMain:
             clear_output=True,
             cache_dir=None,
         )
+
+    @patch('bost.pull.Github')
+    def test_github_tree_query(self, mock_github):
+        # Mock the Github object and its methods
+        mock_repo = Mock()
+        mock_github.return_value.get_repo.return_value = mock_repo
+
+        bo_models = TypeAdapter(list[SchemaInFileTree]).validate_json((Path(__file__).parent / f"test_data/tree_query_response_bo.json").read_text())
+        mock_repo.get_contents.side_effect = side_effect
+
+        # Call the function under test
+        result = _github_tree_query('bo', 'version')
+
+        # Assert that the Github object and its methods were called with the correct arguments
+        mock_github.assert_called_once()
+
 
     def test_main_with_mocks(self):
         test_cache = True
