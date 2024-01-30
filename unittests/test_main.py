@@ -9,7 +9,7 @@ import requests_mock
 from pydantic import parse_obj_as, TypeAdapter
 
 from bost.__main__ import main
-from bost.pull import get_github_repo_info, SchemaInFileTree, _github_tree_query
+from bost.pull import get_github_repo_info, SchemaInFileTree, _github_tree_query, resolve_latest_version
 from bost.schema import Object, StrEnum, String
 
 if TYPE_CHECKING:
@@ -27,9 +27,9 @@ def side_effect(url, ref):
         (Path(__file__).parent / f"test_data/tree_query_response_com.json").read_text())
     enum_models = TypeAdapter(list[SchemaInFileTree]).validate_json(
         (Path(__file__).parent / f"test_data/tree_query_response_enum.json").read_text())
-    values = {("src/bo4e_schemas/bo", "version"): [model for model in bo_models],
-              ("src/bo4e_schemas/com", "version"): [model for model in com_models],
-              ("src/bo4e_schemas/com", "version"): [model for model in enum_models]}
+    values = {("src/bo4e_schemas/bo", "v0.6.1-rc13"): [model for model in bo_models],
+              ("src/bo4e_schemas/com", "v0.6.1-rc13"): [model for model in com_models],
+              ("src/bo4e_schemas/enum", "v0.6.1-rc13"): [model for model in enum_models]}
     return values[(url, ref)]
 
 class TestMain:
@@ -45,17 +45,25 @@ class TestMain:
             cache_dir=None,
         )
 
+    @patch('bost.pull.requests.get')
     @patch('bost.pull.Github')
-    def test_github_tree_query(self, mock_github):
+    def test_github_tree_query(self, mock_github, mock_requests_get):
         # Mock the Github object and its methods
         mock_repo = Mock()
         mock_github.return_value.get_repo.return_value = mock_repo
-
-        bo_models = TypeAdapter(list[SchemaInFileTree]).validate_json((Path(__file__).parent / f"test_data/tree_query_response_bo.json").read_text())
         mock_repo.get_contents.side_effect = side_effect
 
+        # Mock the response from requests.get
+        mock_response = Mock()
+        mock_response.json.return_value = {"tag_name": "v0.6.1-rc13"}
+        mock_response.raise_for_status.return_value = None
+
+        # Configure the requests.get to return the mock response
+        mock_requests_get.return_value = mock_response
+
         # Call the function under test
-        result = _github_tree_query('bo', 'version')
+        latest_version = resolve_latest_version()
+        result = _github_tree_query("enum", "v0.6.1-rc13")
 
         # Assert that the Github object and its methods were called with the correct arguments
         mock_github.assert_called_once()
