@@ -9,7 +9,7 @@ import requests_mock
 from pydantic import parse_obj_as, TypeAdapter
 
 from bost.__main__ import main
-from bost.pull import get_github_repo_info, SchemaInFileTree, _github_tree_query, resolve_latest_version
+from bost.pull import SchemaInFileTree, _github_tree_query, resolve_latest_version
 from bost.schema import Object, StrEnum, String
 
 if TYPE_CHECKING:
@@ -37,7 +37,7 @@ class TestMain:
         #pytest.skip("Unmocked test is skipped in CI")
         main(
             output=OUTPUT_DIR,
-            target_version="v0.6.1-rc13",
+            target_version="latest",
             config_file=None,
             update_refs=True,
             set_default_version=False,
@@ -45,7 +45,17 @@ class TestMain:
             cache_dir=None,
         )
 
-    @patch('bost.pull.requests.get')
+    @patch('bost.pull.Github')
+    def test_resolve_latest_version(self):
+        # Mock the response from requests.get
+        mock_response = Mock()
+        mock_response.json.return_value = {"tag_name": "v0.6.1-rc13"}
+        mock_response.raise_for_status.return_value = None
+
+        # Call the function under test
+        latest_version = resolve_latest_version()
+        assert mock_response.return_value.assert_called_once()
+
     @patch('bost.pull.Github')
     def test_github_tree_query(self, mock_github, mock_requests_get):
         # Mock the Github object and its methods
@@ -62,7 +72,6 @@ class TestMain:
         mock_requests_get.return_value = mock_response
 
         # Call the function under test
-        latest_version = resolve_latest_version()
         result = _github_tree_query("enum", "v0.6.1-rc13")
 
         # Assert that the Github object and its methods were called with the correct arguments
