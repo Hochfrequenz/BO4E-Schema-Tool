@@ -139,9 +139,9 @@ def resolve_latest_version() -> str:
     """
     Resolve the latest BO4E version from the github api.
     """
-    response = requests.get(f"https://api.github.com/repos/{OWNER}/{REPO}/releases/latest", timeout=TIMEOUT)
-    response.raise_for_status()
-    return response.json()["tag_name"]
+    repo = Github().get_repo(f"{OWNER}/{REPO}")
+    latest_release = repo.get_latest_release().title
+    return latest_release
 
 
 def get_schema_list(version: str, cache_dir: Path | None) -> SchemaLists:
