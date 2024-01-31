@@ -130,7 +130,10 @@ def _github_tree_query(pkg: str, version: str) -> list[SchemaInFileTree]:
     """
     repo = Github().get_repo(f"{OWNER}/{REPO}")
     response = repo.get_contents(f"src/bo4e_schemas/{pkg}", ref=version)
-    return [SchemaInFileTree(name=file.name, path=file.path, download_url=file.download_url) for file in response]
+    return [
+        SchemaInFileTree(name=file.name, path=file.path, download_url=file.download_url)
+        for file in response  # type:ignore[union-attr]
+    ]
 
 
 @lru_cache(maxsize=1)
