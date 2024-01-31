@@ -46,18 +46,22 @@ class TestMain:
         )
 
     @patch('bost.pull.Github')
-    def test_resolve_latest_version(self):
-        # Mock the response from requests.get
-        mock_response = Mock()
-        mock_response.json.return_value = {"tag_name": "v0.6.1-rc13"}
-        mock_response.raise_for_status.return_value = None
+    def test_resolve_latest_version(self, mock_github):
+        # Arrange
+        mock_repo = mock_github().get_repo.return_value
+        mock_release = Mock()
+        mock_release.title = "v1.0.0"  # Set the desired latest release version
+        mock_repo.get_latest_release.return_value = mock_release
 
-        # Call the function under test
-        latest_version = resolve_latest_version()
-        assert mock_response.return_value.assert_called_once()
+        # Act
+        result = resolve_latest_version()
+
+        # Assert
+        assert result == mock_release.title
 
     @patch('bost.pull.Github')
-    def test_github_tree_query(self, mock_github, mock_requests_get):
+    def test_github_tree_query(self, mock_github):
+        test_cache = True
         # Mock the Github object and its methods
         mock_repo = Mock()
         mock_github.return_value.get_repo.return_value = mock_repo
@@ -68,14 +72,53 @@ class TestMain:
         mock_response.json.return_value = {"tag_name": "v0.6.1-rc13"}
         mock_response.raise_for_status.return_value = None
 
-        # Configure the requests.get to return the mock response
-        mock_requests_get.return_value = mock_response
-
         # Call the function under test
-        result = _github_tree_query("enum", "v0.6.1-rc13")
+        # result = _github_tree_query("enum", "v0.6.1-rc13")
+        if test_cache:
+            # Delete the cache dir if present to ensure a dry run at first.
+            # Somehow, when creating a release and the cli tests are running, there seems to be cached data.
+            # I don't know what's going on there.
+            shutil.rmtree(CACHE_DIR, ignore_errors=True)
+        main(
+            output=OUTPUT_DIR,
+            target_version="v0.6.1-rc13",
+            config_file=CONFIG_FILE,
+            update_refs=True,
+            set_default_version=True,
+            clear_output=True,
+            cache_dir=CACHE_DIR,
+        )
+        if test_cache:
+            # This tests other parts of the cache implementation
+            main(
+                output=OUTPUT_DIR,
+                target_version="v0.6.1-rc13",
+                config_file=CONFIG_FILE,
+                update_refs=True,
+                set_default_version=True,
+                clear_output=True,
+                cache_dir=CACHE_DIR,
+            )
 
-        # Assert that the Github object and its methods were called with the correct arguments
-        mock_github.assert_called_once()
+        assert (OUTPUT_DIR / "bo" / "Angebot.json").exists()
+        assert (OUTPUT_DIR / "com" / "COM.json").exists()
+        assert (OUTPUT_DIR / "enum" / "Typ.json").exists()
+        assert (OUTPUT_DIR / "bo" / "AdditionalModel.json").exists()
+
+        angebot_schema = Object.model_validate_json((OUTPUT_DIR / "bo" / "Angebot.json").read_text())
+        assert angebot_schema.title == "Angebot"
+        assert "foo" in angebot_schema.properties
+        additional_model_schema = Object.model_validate_json(
+            (OUTPUT_DIR / "bo" / "AdditionalModel.json").read_text()
+        )
+        assert additional_model_schema.title == "AdditionalModel"
+        assert additional_model_schema.properties["_version"].default == "v0.6.1-rc13"
+        assert isinstance(additional_model_schema.properties["_version"], String)
+
+        typ_schema = StrEnum.model_validate_json((OUTPUT_DIR / "enum" / "Typ.json").read_text())
+        assert typ_schema.title == "Typ"
+        assert "foo" in typ_schema.enum
+        assert "bar" in typ_schema.enum
 
 
     def test_main_with_mocks(self):
