@@ -6,7 +6,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 import requests_mock
-from pydantic import parse_obj_as, TypeAdapter
+from pydantic import TypeAdapter, parse_obj_as
 
 from bost.__main__ import main
 from bost.pull import SchemaInFileTree, _github_tree_query, resolve_latest_version
@@ -20,17 +20,24 @@ OUTPUT_DIR = Path(__file__).parent / "output/bo4e_schemas"
 CACHE_DIR = Path(__file__).parent / "output/bo4e_cache"
 CONFIG_FILE = Path(__file__).parent / "config_test.json"
 
+
 def side_effect(url, ref):
     bo_models = TypeAdapter(list[SchemaInFileTree]).validate_json(
-        (Path(__file__).parent / f"test_data/tree_query_response_bo.json").read_text())
+        (Path(__file__).parent / f"test_data/tree_query_response_bo.json").read_text()
+    )
     com_models = TypeAdapter(list[SchemaInFileTree]).validate_json(
-        (Path(__file__).parent / f"test_data/tree_query_response_com.json").read_text())
+        (Path(__file__).parent / f"test_data/tree_query_response_com.json").read_text()
+    )
     enum_models = TypeAdapter(list[SchemaInFileTree]).validate_json(
-        (Path(__file__).parent / f"test_data/tree_query_response_enum.json").read_text())
-    values = {("src/bo4e_schemas/bo", "v0.6.1-rc13"): [model for model in bo_models],
-              ("src/bo4e_schemas/com", "v0.6.1-rc13"): [model for model in com_models],
-              ("src/bo4e_schemas/enum", "v0.6.1-rc13"): [model for model in enum_models]}
+        (Path(__file__).parent / f"test_data/tree_query_response_enum.json").read_text()
+    )
+    values = {
+        ("src/bo4e_schemas/bo", "v0.6.1-rc13"): [model for model in bo_models],
+        ("src/bo4e_schemas/com", "v0.6.1-rc13"): [model for model in com_models],
+        ("src/bo4e_schemas/enum", "v0.6.1-rc13"): [model for model in enum_models],
+    }
     return values[(url, ref)]
+
 
 class TestMain:
     def test_main_without_mocks(self):
@@ -45,7 +52,7 @@ class TestMain:
             cache_dir=None,
         )
 
-    @patch('bost.pull.Github')
+    @patch("bost.pull.Github")
     def test_resolve_latest_version(self, mock_github):
         # Arrange
         mock_repo = mock_github().get_repo.return_value
@@ -59,7 +66,7 @@ class TestMain:
         # Assert
         assert result == mock_release.title
 
-    @patch('bost.pull.Github')
+    @patch("bost.pull.Github")
     def test_github_tree_query(self, mock_github):
         test_cache = True
         # Mock the Github object and its methods
@@ -108,9 +115,7 @@ class TestMain:
         angebot_schema = Object.model_validate_json((OUTPUT_DIR / "bo" / "Angebot.json").read_text())
         assert angebot_schema.title == "Angebot"
         assert "foo" in angebot_schema.properties
-        additional_model_schema = Object.model_validate_json(
-            (OUTPUT_DIR / "bo" / "AdditionalModel.json").read_text()
-        )
+        additional_model_schema = Object.model_validate_json((OUTPUT_DIR / "bo" / "AdditionalModel.json").read_text())
         assert additional_model_schema.title == "AdditionalModel"
         assert additional_model_schema.properties["_version"].default == "v0.6.1-rc13"
         assert isinstance(additional_model_schema.properties["_version"], String)
@@ -119,7 +124,6 @@ class TestMain:
         assert typ_schema.title == "Typ"
         assert "foo" in typ_schema.enum
         assert "bar" in typ_schema.enum
-
 
     def test_main_with_mocks(self):
         test_cache = True
