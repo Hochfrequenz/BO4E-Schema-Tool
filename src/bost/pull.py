@@ -1,14 +1,13 @@
 """
 Contains functions to pull the BO4E-Schemas from GitHub.
 """
-import json
 from functools import lru_cache
 from itertools import chain
 from pathlib import Path
 from typing import Iterable, Union
 
 import requests
-from github import ContentFile, Github
+from github import Github
 from pydantic import BaseModel, TypeAdapter, ValidationError
 from requests import Response
 

@@ -34,7 +34,7 @@ def side_effect(url, ref):
 
 class TestMain:
     def test_main_without_mocks(self):
-        #pytest.skip("Unmocked test is skipped in CI")
+        pytest.skip("Unmocked test is skipped in CI")
         main(
             output=OUTPUT_DIR,
             target_version="latest",
