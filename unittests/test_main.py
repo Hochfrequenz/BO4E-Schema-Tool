@@ -24,7 +24,7 @@ class TestMain:
         pytest.skip("Unmocked test is skipped in CI")
         main(
             output=OUTPUT_DIR,
-            target_version="latest",
+            target_version="v0.6.1-rc13",
             config_file=None,
             update_refs=True,
             set_default_version=False,
