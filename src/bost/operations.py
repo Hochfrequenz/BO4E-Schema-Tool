@@ -49,7 +49,7 @@ def add_additional_enum_items(obj: StrEnum, additional_items: list[str]) -> StrE
     return obj
 
 
-REF_REGEX = re.compile(r"src/bo4e_schemas/(bo|com|enum)/(\w+)\.json")
+REF_REGEX = re.compile(r"src/bo4e_schemas/(?:(bo|com|enum)/)?(\w+)\.json")
 
 
 def update_reference(field: Reference, own_module: tuple[str, ...]):
