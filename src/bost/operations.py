@@ -65,6 +65,8 @@ def update_reference(field: Reference, own_module: tuple[str, ...]):
 
     if own_module[0] == match.group(1):
         field.ref = f"{match.group(2)}.json#"
+    elif match.group(1) is None:
+        field.ref = f"../{match.group(2)}.json#"
     else:
         field.ref = f"../{match.group(1)}/{match.group(2)}.json#"
 
