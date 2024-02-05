@@ -2,7 +2,6 @@
 Contains functions to pull the BO4E-Schemas from GitHub.
 """
 from functools import lru_cache
-from itertools import chain
 from pathlib import Path
 from typing import Annotated, ItemsView, Iterable, KeysView, Union, ValuesView
 
@@ -113,7 +112,9 @@ class SchemaInFileTree(BaseModel):
 
 class SchemaTree(RootModel):
     """
-    A list of schemas
+    This model represents a file tree of `SchemaInFileTree` objects.
+    You can use path indices to access the tree. The class will handle those paths and splits them
+    into separate indices.
     """
 
     root: Annotated[dict[str, Union["SchemaTree", SchemaInFileTree]], Field(default_factory=dict)]
@@ -121,14 +122,11 @@ class SchemaTree(RootModel):
     @staticmethod
     def resolve_path(path: str) -> list[str]:
         """
-        Resolve a path in the schema tree.
+        Splits a path into its parts.
         """
         return path.split("/")
 
     def __setitem__(self, key, value):
-        """
-        Set an item in the schema tree.
-        """
         parts = self.resolve_path(key)
         current = self.root
         for part in parts[:-1]:
@@ -140,9 +138,6 @@ class SchemaTree(RootModel):
         current[parts[-1]] = value
 
     def __getitem__(self, key):
-        """
-        Get an item from the schema tree.
-        """
         parts = self.resolve_path(key)
         current = self.root
         for part in parts:
@@ -154,9 +149,6 @@ class SchemaTree(RootModel):
         return current
 
     def __contains__(self, path):
-        """
-        Check if a path is in the schema tree.
-        """
         parts = self.resolve_path(path)
         current = self.root
         for part in parts:
@@ -172,18 +164,19 @@ class SchemaTree(RootModel):
         return len(self.root)
 
     def keys(self) -> KeysView[str]:
+        """Get all keys of the root."""
         return self.root.keys()
 
     def values(self) -> ValuesView[Union["SchemaTree", SchemaInFileTree]]:
+        """Get all values of the root."""
         return self.root.values()
 
     def items(self) -> ItemsView[str, Union["SchemaTree", SchemaInFileTree]]:
+        """Get all items of the root."""
         return self.root.items()
 
     def all_files(self) -> Iterable[SchemaInFileTree]:
-        """
-        Get all files in the schema tree.
-        """
+        """Get all files in the schema tree."""
         for value in self.values():
             if isinstance(value, SchemaInFileTree):
                 yield value
@@ -203,12 +196,8 @@ def _github_tree_query(version: str) -> SchemaTree:
     repo = Github().get_repo(f"{OWNER}/{REPO}")
     release = repo.get_release(version)
     tree = repo.get_git_tree(release.target_commitish, recursive=True)
-    schema_tree = SchemaTree()
-    # import pickle
+    schema_tree = SchemaTree({})
 
-    # TEST_DIR = Path(__file__).parents[2] / "unittests/test_data"
-    # pickle.dump(release, open(TEST_DIR / "release.pkl", "wb"))
-    # pickle.dump(tree, open(TEST_DIR / "tree.pkl", "wb"))
     for tree_element in tree.tree:
         if not tree_element.path.startswith("src/bo4e_schemas"):
             continue
@@ -217,7 +206,8 @@ def _github_tree_query(version: str) -> SchemaTree:
             # for the respective parent directory. This way we only need one request per directory.
             continue
         contents = repo.get_contents(tree_element.path, ref=release.target_commitish)
-        # pickle.dump(contents, open(TEST_DIR / f"contents_{tree_element.path.replace('/', '_')}.pkl", "wb"))
+        if not isinstance(contents, list):
+            contents = [contents]
         for file_or_dir in contents:
             if file_or_dir.name.endswith(".json"):
                 relative_path = Path(file_or_dir.path).relative_to("src/bo4e_schemas").with_suffix("")

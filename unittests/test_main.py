@@ -7,10 +7,8 @@ from unittest.mock import Mock, patch
 
 import pytest
 import requests_mock
-from pydantic import TypeAdapter
 
 from bost.__main__ import main
-from bost.pull import SchemaInFileTree
 from bost.schema import Object, StrEnum, String
 
 if TYPE_CHECKING:
@@ -38,13 +36,14 @@ class TestMain:
 
     @patch("bost.pull.Github")
     def test_github_tree_query(self, mock_github):
-        def new_get_contents(path, ref):
+        def new_get_contents(path, ref):  # pylint: disable=unused-argument
             return pickle.load(open(TEST_DATA_DIR / f"contents_{path.replace('/', '_')}.pkl", mode="rb"))
 
         test_cache = True
 
         mock_repo = Mock()
         mock_github.return_value.get_repo.return_value = mock_repo
+        # pylint: disable=consider-using-with
         mock_repo.get_release.return_value = pickle.load(open(TEST_DATA_DIR / "release.pkl", mode="rb"))
         mock_repo.get_git_tree.return_value = pickle.load(open(TEST_DATA_DIR / "tree.pkl", mode="rb"))
         mock_repo.get_contents = new_get_contents
