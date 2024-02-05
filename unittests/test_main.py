@@ -25,7 +25,7 @@ TEST_DATA_DIR = Path(__file__).parent / "test_data"
 
 class TestMain:
     def test_main_without_mocks(self):
-        # pytest.skip("Unmocked test is skipped in CI")
+        pytest.skip("Unmocked test is skipped in CI")
         main(
             output=OUTPUT_DIR,
             target_version="v0.6.1-rc13",
