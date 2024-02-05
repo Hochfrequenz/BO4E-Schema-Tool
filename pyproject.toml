@@ -21,6 +21,7 @@ dependencies = [
     "pydantic",
     "more-itertools",
     "click",
+    "PyGithub",
 ]     # add all the dependencies from requirements.in here, too
 dynamic = ["readme", "version"]
 

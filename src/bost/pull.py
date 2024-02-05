@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Iterable, Union
 
 import requests
+from github import Github
 from pydantic import BaseModel, TypeAdapter, ValidationError
 from requests import Response
 
@@ -127,12 +128,12 @@ def _github_tree_query(pkg: str, version: str) -> list[SchemaInFileTree]:
     """
     Query the github tree api for a specific package and version.
     """
-    response = requests.get(
-        f"https://api.github.com/repos/{OWNER}/{REPO}/contents/src/bo4e_schemas/{pkg}?ref={version}", timeout=TIMEOUT
-    )
-    if response.status_code != 200:
-        raise ValueError(f"Could not query repository tree from {response.request.url}: {response.text}")
-    return TypeAdapter(list[SchemaInFileTree]).validate_json(response.text)
+    repo = Github().get_repo(f"{OWNER}/{REPO}")
+    response = repo.get_contents(f"src/bo4e_schemas/{pkg}", ref=version)
+    return [
+        SchemaInFileTree(name=file.name, path=file.path, download_url=file.download_url)
+        for file in response  # type:ignore[union-attr]
+    ]
 
 
 @lru_cache(maxsize=1)
@@ -140,9 +141,9 @@ def resolve_latest_version() -> str:
     """
     Resolve the latest BO4E version from the github api.
     """
-    response = requests.get(f"https://api.github.com/repos/{OWNER}/{REPO}/releases/latest", timeout=TIMEOUT)
-    response.raise_for_status()
-    return response.json()["tag_name"]
+    repo = Github().get_repo(f"{OWNER}/{REPO}")
+    latest_release = repo.get_latest_release().title
+    return latest_release
 
 
 def get_schema_list(version: str, cache_dir: Path | None) -> SchemaLists:
