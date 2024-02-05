@@ -204,6 +204,11 @@ def _github_tree_query(version: str) -> SchemaTree:
     release = repo.get_release(version)
     tree = repo.get_git_tree(release.target_commitish, recursive=True)
     schema_tree = SchemaTree()
+    # import pickle
+
+    # TEST_DIR = Path(__file__).parents[2] / "unittests/test_data"
+    # pickle.dump(release, open(TEST_DIR / "release.pkl", "wb"))
+    # pickle.dump(tree, open(TEST_DIR / "tree.pkl", "wb"))
     for tree_element in tree.tree:
         if not tree_element.path.startswith("src/bo4e_schemas"):
             continue
@@ -212,6 +217,7 @@ def _github_tree_query(version: str) -> SchemaTree:
             # for the respective parent directory. This way we only need one request per directory.
             continue
         contents = repo.get_contents(tree_element.path, ref=release.target_commitish)
+        # pickle.dump(contents, open(TEST_DIR / f"contents_{tree_element.path.replace('/', '_')}.pkl", "wb"))
         for file_or_dir in contents:
             if file_or_dir.name.endswith(".json"):
                 relative_path = Path(file_or_dir.path).relative_to("src/bo4e_schemas").with_suffix("")
