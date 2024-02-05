@@ -3,7 +3,9 @@ This module contains classes to model json files which are formatted as "json sc
 https://json-schema.org/draft/2019-09/json-schema-validation
 Note that this actually supports mainly our BO4E-Schemas, but not necessarily the full json schema validation standard.
 """
-from typing import Annotated, Any, Literal, Optional, Union
+from typing import Annotated
+from typing import Any as _Any
+from typing import Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -15,8 +17,7 @@ class TypeBase(BaseModel):
 
     description: str = ""
     title: str = ""
-    type: str = ""
-    default: Any = None
+    default: _Any = None
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -109,7 +110,7 @@ class Decimal(TypeBase):
     This pydantic class models the "decimal" type in a json schema validation file.
     """
 
-    type: Literal["string"]
+    type: Literal["string", "number"]
     format: Literal["decimal"]
 
 
@@ -137,6 +138,12 @@ class Null(TypeBase):
     type: Literal["null"]
 
 
+class Any(TypeBase):
+    """
+    This pydantic class models the "any" type in a json schema validation file.
+    """
+
+
 class Reference(TypeBase):
     """
     This pydantic class models the "$ref" keyword in a json schema validation file.
@@ -145,5 +152,7 @@ class Reference(TypeBase):
     ref: Annotated[str, Field(alias="$ref")]
 
 
-SchemaType = Union[Object, StrEnum, Array, AnyOf, AllOf, String, Number, Decimal, Integer, Boolean, Null, Reference]
+SchemaType = Union[
+    Object, StrEnum, Array, AnyOf, AllOf, String, Number, Decimal, Integer, Boolean, Null, Reference, Any
+]
 SchemaRootType = Union[Object, StrEnum]

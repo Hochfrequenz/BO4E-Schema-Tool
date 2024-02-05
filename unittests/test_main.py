@@ -21,15 +21,15 @@ CONFIG_FILE = Path(__file__).parent / "config_test.json"
 
 class TestMain:
     def test_main_without_mocks(self):
-        pytest.skip("Unmocked test is skipped in CI")
+        # pytest.skip("Unmocked test is skipped in CI")
         main(
             output=OUTPUT_DIR,
-            target_version="v0.6.1-rc13",
+            target_version="v202401.0.1",
             config_file=None,
             update_refs=True,
             set_default_version=False,
             clear_output=True,
-            cache_dir=None,
+            cache_dir=CACHE_DIR,
         )
 
     @patch("bost.pull.Github")
