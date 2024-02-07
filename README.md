@@ -33,8 +33,8 @@ Usage: bost [OPTIONS]
   Entry point for the bost command line interface.
 
 Options:
-  -o, --output DIRECTORY          Output directory to pull the JSON schemas
-                                  into  [required]
+  -o, --output DIRECTORY          Output directory to pull the JSON schemas into
+                                  [required]
   -t, --target-version TEXT       Target BO4E version. Defaults to latest.
   -c, --config-file FILE          Path to the config file
   -r, --update-refs / -R, --no-update-refs
@@ -44,14 +44,18 @@ Options:
   -d, --set-default-version / -D, --no-set-default-version
                                   Automatically set or overrides the default
                                   version for '_version' fields with --target-
-                                  version. This is especially useful if you
-                                  want to define additional models which
-                                  should always have the correct version.
+                                  version. This is especially useful if you want
+                                  to define additional models which should
+                                  always have the correct version.
   --clear-output                  Clear the output directory before saving the
                                   schemas
-  --cache-dir DIRECTORY           Path to the optional cache dir. If not set
-                                  the cache is disabled. It will cache the raw
+  --cache-dir DIRECTORY           Path to the optional cache dir. If not set the
+                                  cache is disabled. It will cache the raw
                                   schema files downloaded from github.
+  --token TEXT                    A GitHub Access token to authenticate with the
+                                  GitHub API. Use this if you have problems with
+                                  the rate limit. Alternatively, you can set the
+                                  environment variable GITHUB_ACCESS_TOKEN.
   --version                       Show the version and exit.
   --help                          Show this message and exit.
 ```
@@ -196,6 +200,15 @@ version each time you upgrade the BO4E version.
 
 To solve this problem, you can use the `--set-default-version` flag. It will automatically set or override the default
 value for `_version` fields with the `--target-version`.
+
+### GitHub Access Token
+
+If you have problems with the rate limit of the GitHub API, you can specify a GitHub Access token with the
+`--token` flag. For more information, please refer to the
+[GitHub documentation](https://docs.github.com/de/rest/using-the-rest-api/rate-limits-for-the-rest-api).
+
+If you don't want to specify the token in the parameter list, you can also set the environment variable
+`GITHUB_ACCESS_TOKEN`.
 
 ### Clear Output
 
