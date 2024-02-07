@@ -68,6 +68,16 @@ from bost.schema import AnyOf, Object, StrEnum
     required=False,
     default=None,
 )
+@click.option(
+    "--token",
+    help="A GitHub Access token to authenticate with the GitHub API. "
+    "Use this if you have problems with the rate limit. "
+    "Alternatively, you can set the environment variable GITHUB_ACCESS_TOKEN.",
+    type=str,
+    required=False,
+    default=None,
+    envvar="GITHUB_ACCESS_TOKEN",
+)
 @click.version_option(package_name="BO4E-Schema-Tool")
 def main_command_line(*args, **kwargs) -> None:
     """
@@ -177,6 +187,7 @@ def main(
     clear_output: bool,
     config_file: Path | None = None,
     cache_dir: Path | None = None,
+    token: str | None = None,
 ) -> None:
     """
     Pull the schemas from the BO4E repository and apply the operations defined in the config file.
@@ -187,11 +198,11 @@ def main(
         config = None
 
     if target_version == "latest":
-        target_version = resolve_latest_version()
+        target_version = resolve_latest_version(token=token)
 
     if not is_cache_dir_valid(cache_dir, target_version):
         cache_dir = None
-    schemas = dict(schema_iterator(target_version, output, cache_dir))
+    schemas = dict(schema_iterator(target_version, output, cache_dir, token=token))
 
     if config is not None:
         schemas.update(additional_schema_iterator(config, config_file, output))
