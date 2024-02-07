@@ -149,7 +149,8 @@ The config file can contain the following keys:
 
 Note: For all config keys (except `required_fields`), you can alternatively use the `"$ref"` key to reference to a file.
 This is useful to keep the config file small and to reuse definitions.
-The path will be treated as relative to the config file. You cannot define absolute paths.
+If the path is relative it will be applied to the path of the directory where the config file is stored in.
+But, you can define absolute paths if you want.
 
 As a little extra feature for `additional_fields`: If you want to define multiple fields in one external file,
 you can define a list of fields instead of a single field. The reference in the `"$ref"` key is the same.
