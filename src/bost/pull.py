@@ -16,7 +16,7 @@ from bost.config import Config
 from bost.logger import logger
 from bost.schema import Object, Reference, SchemaRootType, StrEnum
 
-OWNER = "Hochfrequenz"
+OWNER = "BO4E"
 REPO = "BO4E-Schemas"
 TIMEOUT = 10  # in seconds
 
