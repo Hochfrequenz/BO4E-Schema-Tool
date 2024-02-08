@@ -7,6 +7,8 @@ from typing import Annotated, ItemsView, Iterable, KeysView, Union, ValuesView
 
 import requests
 from github import Github
+from github.Auth import Token
+from github.Repository import Repository
 from pydantic import BaseModel, Field, RootModel, TypeAdapter, ValidationError
 from requests import Response
 
@@ -32,6 +34,7 @@ class SchemaMetadata(BaseModel):
     """ e.g. ('bo', 'Angebot') or ('ZusatzAttribut',)"""
     file_path: Path
     cached_path: Path | None
+    token: str | None
 
     @property
     def module_name(self) -> str:
@@ -67,7 +70,11 @@ class SchemaMetadata(BaseModel):
         """
         Download the schema from GitHub. Returns the response object.
         """
-        response = requests.get(self.download_url, timeout=TIMEOUT)
+        if self.token is not None:
+            headers = {"Authorization": f"Bearer {self.token}"}
+        else:
+            headers = None
+        response = requests.get(self.download_url, timeout=TIMEOUT, headers=headers)
         if response.status_code != 200:
             raise ValueError(f"Could not download schema from {self.download_url}: {response.text}")
         logger.info("Downloaded %s", self.download_url)
@@ -188,12 +195,22 @@ SchemaTree.model_rebuild()
 CacheData.model_rebuild()
 
 
+@lru_cache(maxsize=1)
+def get_source_repo(token: str | None) -> Repository:
+    """
+    Get the source repository.
+    """
+    if token is not None:
+        return Github(auth=Token(token)).get_repo(f"{OWNER}/{REPO}")
+    return Github().get_repo(f"{OWNER}/{REPO}")
+
+
 @lru_cache(maxsize=None)
-def _github_tree_query(version: str) -> SchemaTree:
+def _github_tree_query(version: str, token: str | None) -> SchemaTree:
     """
     Query the github tree api for a specific package and version.
     """
-    repo = Github().get_repo(f"{OWNER}/{REPO}")
+    repo = get_source_repo(token)
     release = repo.get_release(version)
     tree = repo.get_git_tree(release.target_commitish, recursive=True)
     schema_tree = SchemaTree({})
@@ -222,16 +239,16 @@ def _github_tree_query(version: str) -> SchemaTree:
 
 
 @lru_cache(maxsize=1)
-def resolve_latest_version() -> str:
+def resolve_latest_version(token: str | None) -> str:
     """
     Resolve the latest BO4E version from the github api.
     """
-    repo = Github().get_repo(f"{OWNER}/{REPO}")
+    repo = get_source_repo(token)
     latest_release = repo.get_latest_release().title
     return latest_release
 
 
-def get_schema_list(version: str, cache_dir: Path | None) -> SchemaTree:
+def get_schema_list(version: str, cache_dir: Path | None, token: str | None) -> SchemaTree:
     """
     Get all files metadata from the BO4E-Schemas repository or from cache.
     """
@@ -240,7 +257,7 @@ def get_schema_list(version: str, cache_dir: Path | None) -> SchemaTree:
         if possible_schemas is not None:
             return possible_schemas
 
-    schemas = _github_tree_query(version)
+    schemas = _github_tree_query(version, token=token)
     if cache_dir is not None:
         save_cache(cache_dir / CACHE_FILE_NAME, version=version, file_tree=schemas)
 
@@ -250,13 +267,15 @@ def get_schema_list(version: str, cache_dir: Path | None) -> SchemaTree:
 SCHEMA_CACHE: dict[tuple[str, ...], SchemaMetadata] = {}
 
 
-def schema_iterator(version: str, output: Path, cache_dir: Path | None) -> Iterable[tuple[str, SchemaMetadata]]:
+def schema_iterator(
+    version: str, output: Path, cache_dir: Path | None, token: str | None
+) -> Iterable[tuple[str, SchemaMetadata]]:
     """
     Get all files from the BO4E-Schemas repository.
     This generator function yields tuples of class name and SchemaMetadata objects containing various information about
     the schema.
     """
-    schemas = get_schema_list(version, cache_dir)
+    schemas = get_schema_list(version, cache_dir, token)
     for file in schemas.all_files():
         if not file.name.endswith(".json"):
             continue
@@ -269,6 +288,7 @@ def schema_iterator(version: str, output: Path, cache_dir: Path | None) -> Itera
                 module_path=module_path,
                 file_path=output / relative_path,
                 cached_path=get_cached_file(relative_path, cache_dir),
+                token=token,
             )
         yield SCHEMA_CACHE[module_path].class_name, SCHEMA_CACHE[module_path]
 
@@ -312,6 +332,7 @@ def additional_schema_iterator(
             module_path=(additional_model.module, schema_parsed.title),
             file_path=output / f"{additional_model.module}/{schema_parsed.title}.json",
             cached_path=None,
+            token=None,
         )
         schema_metadata.schema_parsed = schema_parsed
         yield schema_metadata.class_name, schema_metadata
