@@ -2,13 +2,12 @@
 Contains functions to pull the BO4E-Schemas from GitHub.
 """
 from functools import lru_cache
-from itertools import chain
 from pathlib import Path
-from typing import Iterable, Union
+from typing import Annotated, ItemsView, Iterable, KeysView, Union, ValuesView
 
 import requests
 from github import Github
-from pydantic import BaseModel, TypeAdapter, ValidationError
+from pydantic import BaseModel, Field, RootModel, TypeAdapter, ValidationError
 from requests import Response
 
 from bost.cache import CACHE_FILE_NAME, CacheData, get_cached_file, get_cached_file_tree, save_cache
@@ -16,7 +15,7 @@ from bost.config import Config
 from bost.logger import logger
 from bost.schema import Object, Reference, SchemaRootType, StrEnum
 
-OWNER = "Hochfrequenz"
+OWNER = "BO4E"
 REPO = "BO4E-Schemas"
 TIMEOUT = 10  # in seconds
 
@@ -30,14 +29,14 @@ class SchemaMetadata(BaseModel):
     class_name: str
     download_url: str
     module_path: tuple[str, ...]
-    "e.g. ('bo', 'Angebot')"
+    """ e.g. ('bo', 'Angebot') or ('ZusatzAttribut',)"""
     file_path: Path
     cached_path: Path | None
 
     @property
     def module_name(self) -> str:
         """
-        Joined module path. E.g. "bo.Angebot"
+        Joined module path. E.g. "bo.Angebot" or "ZusatzAttribut"
         """
         return ".".join(self.module_path)
 
@@ -107,33 +106,119 @@ class SchemaInFileTree(BaseModel):
 
     name: str
     path: str
+    module_path: tuple[str, ...]
     download_url: str
 
 
-class SchemaLists(BaseModel):
+class SchemaTree(RootModel):
     """
-    A list of schemas
+    This model represents a file tree of `SchemaInFileTree` objects.
+    You can use path indices to access the tree. The class will handle those paths and splits them
+    into separate indices.
     """
 
-    bo: list[SchemaInFileTree]
-    com: list[SchemaInFileTree]
-    enum: list[SchemaInFileTree]
+    root: Annotated[dict[str, Union["SchemaTree", SchemaInFileTree]], Field(default_factory=dict)]
+
+    @staticmethod
+    def resolve_path(path: str) -> list[str]:
+        """
+        Splits a path into its parts.
+        """
+        return path.split("/")
+
+    def __setitem__(self, key, value):
+        parts = self.resolve_path(key)
+        current = self.root
+        for part in parts[:-1]:
+            try:
+                current = current[part]
+            except KeyError:
+                current[part] = self.__class__()
+                current = current[part]
+        current[parts[-1]] = value
+
+    def __getitem__(self, key):
+        parts = self.resolve_path(key)
+        current = self.root
+        for part in parts:
+            try:
+                current = current[part]
+            except KeyError:
+                current[part] = self.__class__()
+                current = current[part]
+        return current
+
+    def __contains__(self, path):
+        parts = self.resolve_path(path)
+        current = self.root
+        for part in parts:
+            if part not in current:
+                return False
+            current = current[part]
+        return True
+
+    def __iter__(self):
+        return iter(self.root)
+
+    def __len__(self):
+        return len(self.root)
+
+    def keys(self) -> KeysView[str]:
+        """Get all keys of the root."""
+        return self.root.keys()
+
+    def values(self) -> ValuesView[Union["SchemaTree", SchemaInFileTree]]:
+        """Get all values of the root."""
+        return self.root.values()
+
+    def items(self) -> ItemsView[str, Union["SchemaTree", SchemaInFileTree]]:
+        """Get all items of the root."""
+        return self.root.items()
+
+    def all_files(self) -> Iterable[SchemaInFileTree]:
+        """Get all files in the schema tree."""
+        for value in self.values():
+            if isinstance(value, SchemaInFileTree):
+                yield value
+            else:
+                yield from value.all_files()
 
 
+SchemaTree.model_rebuild()
 CacheData.model_rebuild()
 
 
 @lru_cache(maxsize=None)
-def _github_tree_query(pkg: str, version: str) -> list[SchemaInFileTree]:
+def _github_tree_query(version: str) -> SchemaTree:
     """
     Query the github tree api for a specific package and version.
     """
     repo = Github().get_repo(f"{OWNER}/{REPO}")
-    response = repo.get_contents(f"src/bo4e_schemas/{pkg}", ref=version)
-    return [
-        SchemaInFileTree(name=file.name, path=file.path, download_url=file.download_url)
-        for file in response  # type:ignore[union-attr]
-    ]
+    release = repo.get_release(version)
+    tree = repo.get_git_tree(release.target_commitish, recursive=True)
+    schema_tree = SchemaTree({})
+
+    for tree_element in tree.tree:
+        if not tree_element.path.startswith("src/bo4e_schemas"):
+            continue
+        if tree_element.path.endswith(".json"):
+            # We could send a `get_contents` request for each file, but instead we send a request
+            # for the respective parent directory. This way we only need one request per directory.
+            continue
+        contents = repo.get_contents(tree_element.path, ref=release.target_commitish)
+        if not isinstance(contents, list):
+            contents = [contents]
+        for file_or_dir in contents:
+            if file_or_dir.name.endswith(".json"):
+                relative_path = Path(file_or_dir.path).relative_to("src/bo4e_schemas").with_suffix("")
+                schema = SchemaInFileTree(
+                    name=file_or_dir.name,
+                    path=file_or_dir.path,
+                    module_path=relative_path.parts,
+                    download_url=file_or_dir.download_url,
+                )
+                schema_tree[str(relative_path)] = schema
+    return schema_tree
 
 
 @lru_cache(maxsize=1)
@@ -146,7 +231,7 @@ def resolve_latest_version() -> str:
     return latest_release
 
 
-def get_schema_list(version: str, cache_dir: Path | None) -> SchemaLists:
+def get_schema_list(version: str, cache_dir: Path | None) -> SchemaTree:
     """
     Get all files metadata from the BO4E-Schemas repository or from cache.
     """
@@ -155,7 +240,7 @@ def get_schema_list(version: str, cache_dir: Path | None) -> SchemaLists:
         if possible_schemas is not None:
             return possible_schemas
 
-    schemas = SchemaLists(**{pkg: _github_tree_query(pkg, version) for pkg in ("bo", "com", "enum")})
+    schemas = _github_tree_query(version)
     if cache_dir is not None:
         save_cache(cache_dir / CACHE_FILE_NAME, version=version, file_tree=schemas)
 
@@ -172,11 +257,11 @@ def schema_iterator(version: str, output: Path, cache_dir: Path | None) -> Itera
     the schema.
     """
     schemas = get_schema_list(version, cache_dir)
-    for file in chain(schemas.bo, schemas.com, schemas.enum):
+    for file in schemas.all_files():
         if not file.name.endswith(".json"):
             continue
         relative_path = Path(file.path).relative_to("src/bo4e_schemas")
-        module_path = (*relative_path.parent.parts, relative_path.stem)
+        module_path = file.module_path
         if module_path not in SCHEMA_CACHE:
             SCHEMA_CACHE[module_path] = SchemaMetadata(
                 class_name=relative_path.stem,

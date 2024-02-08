@@ -68,10 +68,12 @@ class Config(BaseModel):
     The config file model
     """
 
-    required_fields: Annotated[list[str], Field(alias="requiredFields")] = []
-    additional_fields: Annotated[list[AdditionalField | Reference], Field(alias="additionalFields")] = []
-    additional_enum_items: Annotated[list[AdditionalEnumItem], Field(alias="additionalEnumItems")] = []
-    additional_models: Annotated[list[AdditionalModel], Field(alias="additionalModels")] = []
+    required_fields: Annotated[list[str], Field(alias="requiredFields", default_factory=list)]
+    additional_fields: Annotated[
+        list[AdditionalField | Reference], Field(alias="additionalFields", default_factory=list)
+    ]
+    additional_enum_items: Annotated[list[AdditionalEnumItem], Field(alias="additionalEnumItems", default_factory=list)]
+    additional_models: Annotated[list[AdditionalModel], Field(alias="additionalModels", default_factory=list)]
 
     @field_validator("required_fields")
     @classmethod

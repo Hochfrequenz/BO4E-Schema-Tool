@@ -10,9 +10,10 @@ from pydantic import BaseModel
 from bost.logger import logger
 
 if TYPE_CHECKING:
-    from bost.pull import SchemaLists
+    from bost.pull import SchemaTree
 
 CACHE_FILE_NAME = ".cache"
+CACHE_DIR_NAME = ".cached_files"
 
 
 class CacheData(BaseModel):
@@ -21,7 +22,7 @@ class CacheData(BaseModel):
     """
 
     version: str
-    file_tree: "SchemaLists"
+    file_tree: "SchemaTree"
 
 
 CACHED_DATA: CacheData
@@ -52,12 +53,12 @@ def save_cache(cache_file: Path, *, version: str) -> None:
 
 
 @overload
-def save_cache(cache_file: Path, *, file_tree: "SchemaLists") -> None:
+def save_cache(cache_file: Path, *, file_tree: "SchemaTree") -> None:
     ...
 
 
 @overload
-def save_cache(cache_file: Path, *, version: str, file_tree: "SchemaLists") -> None:
+def save_cache(cache_file: Path, *, version: str, file_tree: "SchemaTree") -> None:
     ...
 
 
@@ -69,7 +70,7 @@ def save_cache(cache_file: Path, *, cache_data: CacheData) -> None:
 def save_cache(
     cache_file: Path,
     version: str | None = None,
-    file_tree: Optional["SchemaLists"] = None,
+    file_tree: Optional["SchemaTree"] = None,
     cache_data: CacheData | None = None,
 ) -> None:
     """
@@ -87,7 +88,7 @@ def save_cache(
     if "CACHED_DATA" not in globals() and (version is None or file_tree is None):
         raise ValueError("No complete set of cache data provided. This shouldn't happen.")
 
-    update_dict: dict[str, str | SchemaLists] = {}
+    update_dict: dict[str, str | SchemaTree] = {}
     if version is not None:
         update_dict["version"] = version
     if file_tree is not None:
@@ -130,7 +131,7 @@ def is_cache_dir_valid(cache_dir: Path | None, target_version: str) -> bool:
     return True
 
 
-def get_cached_file_tree(cache_dir: Path) -> Optional["SchemaLists"]:
+def get_cached_file_tree(cache_dir: Path) -> Optional["SchemaTree"]:
     """
     Get the cached file tree if the cache is not empty
     """
@@ -146,4 +147,4 @@ def get_cached_file(relative_path: Path, cache_dir: Path | None) -> Path | None:
     """
     if cache_dir is None:
         return None
-    return cache_dir / relative_path
+    return cache_dir / CACHE_DIR_NAME / relative_path
