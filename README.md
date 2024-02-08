@@ -21,7 +21,8 @@ Additionally, it supports some features to edit those schemas which can be defin
 
 ## Usage
 
-This tool is a command line tool. You can use it by installing `BO4E-Schema-Tool` via
+This tool is a command line tool. You can use it by installing `BO4E-Schema-Tool` it from
+[pip](https://pypi.org/project/BO4E-Schema-Tool/) via
 ```bash
 pip install BO4E-Schema-Tool
 ```
@@ -61,7 +62,7 @@ Options:
 ```
 Alternatively, you can run the code from your python code by calling `bost.main()` with the same arguments as above.
 
-### Config-File
+### Config file
 
 The config file is a JSON file which can be used to customize the BO4E-Schemas. The config file is optional.
 
