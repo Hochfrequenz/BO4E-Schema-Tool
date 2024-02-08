@@ -49,7 +49,7 @@ def add_additional_enum_items(obj: StrEnum, additional_items: list[str]) -> StrE
     return obj
 
 
-REF_REGEX = re.compile(r"src/bo4e_schemas/(bo|com|enum)/(\w+)\.json")
+REF_REGEX = re.compile(r"src/bo4e_schemas/(.*/|)(\w+)\.json(#.*)?")
 
 
 def update_reference(field: Reference, own_module: tuple[str, ...]):
@@ -63,10 +63,17 @@ def update_reference(field: Reference, own_module: tuple[str, ...]):
         logger.info("Reference unchanged. Could not parse reference: %s", field.ref)
         return
 
-    if own_module[0] == match.group(1):
-        field.ref = f"{match.group(2)}.json#"
-    else:
-        field.ref = f"../{match.group(1)}/{match.group(2)}.json#"
+    reference_module_path = match.group(1).split("/")
+    reference_module_path[-1] = match.group(2)
+    relative_ref = "#"
+    for ind, (part, own_part) in enumerate(zip(reference_module_path, own_module)):
+        if part != own_part:
+            relative_ref = "../" * (len(own_module) - ind - 1) + "/".join(reference_module_path[ind:]) + ".json#"
+            break
+    if match.group(3) is not None:
+        relative_ref += match.group(3)
+
+    field.ref = relative_ref
 
 
 def update_references(obj: SchemaType, own_module: tuple[str, ...]):
