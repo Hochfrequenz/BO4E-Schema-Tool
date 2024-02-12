@@ -30,7 +30,7 @@ pydantic==2.6.1
     # via -r requirements.in
 pydantic-core==2.16.2
     # via pydantic
-pygithub==2.1.1
+pygithub==2.2.0
     # via -r requirements.in
 pyjwt[crypto]==2.8.0
     # via
@@ -38,14 +38,10 @@ pyjwt[crypto]==2.8.0
     #   pyjwt
 pynacl==1.5.0
     # via pygithub
-python-dateutil==2.8.2
-    # via pygithub
 requests==2.31.0
     # via
     #   -r requirements.in
     #   pygithub
-six==1.16.0
-    # via python-dateutil
 typing-extensions==4.8.0
     # via
     #   pydantic
