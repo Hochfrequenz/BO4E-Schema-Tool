@@ -1,6 +1,7 @@
 """
 Implement functionality to cache the queried data from GitHub.
 """
+
 import shutil
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional, overload
@@ -48,23 +49,19 @@ def load_cache(cache_file: Path) -> CacheData:
 
 
 @overload
-def save_cache(cache_file: Path, *, version: str) -> None:
-    ...
+def save_cache(cache_file: Path, *, version: str) -> None: ...
 
 
 @overload
-def save_cache(cache_file: Path, *, file_tree: "SchemaTree") -> None:
-    ...
+def save_cache(cache_file: Path, *, file_tree: "SchemaTree") -> None: ...
 
 
 @overload
-def save_cache(cache_file: Path, *, version: str, file_tree: "SchemaTree") -> None:
-    ...
+def save_cache(cache_file: Path, *, version: str, file_tree: "SchemaTree") -> None: ...
 
 
 @overload
-def save_cache(cache_file: Path, *, cache_data: CacheData) -> None:
-    ...
+def save_cache(cache_file: Path, *, cache_data: CacheData) -> None: ...
 
 
 def save_cache(

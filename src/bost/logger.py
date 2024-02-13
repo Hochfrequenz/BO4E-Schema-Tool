@@ -1,6 +1,7 @@
 """
 Logging module for bost
 """
+
 import logging
 import sys
 

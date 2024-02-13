@@ -1,6 +1,7 @@
 """
 Contains functions to pull the BO4E-Schemas from GitHub.
 """
+
 from functools import lru_cache
 from pathlib import Path
 from typing import Annotated, ItemsView, Iterable, KeysView, Union, ValuesView
