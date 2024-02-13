@@ -1,6 +1,7 @@
 """
 Contains the model and a loading function to load the config file
 """
+
 import re
 from pathlib import Path
 from typing import Annotated, Literal, Union
