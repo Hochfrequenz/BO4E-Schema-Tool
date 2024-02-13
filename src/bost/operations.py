@@ -1,6 +1,7 @@
 """
 This module contains functions that operate on the schema objects.
 """
+
 import re
 
 from more_itertools import first_true

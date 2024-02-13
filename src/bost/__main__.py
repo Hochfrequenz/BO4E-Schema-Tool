@@ -1,6 +1,7 @@
 """
 This module is the entry point for the bost command line interface.
 """
+
 import re
 import shutil
 from pathlib import Path
