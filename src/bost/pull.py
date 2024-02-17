@@ -18,7 +18,7 @@ from bost.config import Config
 from bost.logger import logger
 from bost.schema import Object, Reference, SchemaRootType, StrEnum
 
-OWNER = "BO4E"
+OWNER = "bo4e"
 REPO = "BO4E-Schemas"
 TIMEOUT = 10  # in seconds
 
@@ -294,12 +294,12 @@ def schema_iterator(
         yield SCHEMA_CACHE[module_path].class_name, SCHEMA_CACHE[module_path]
 
 
-def load_schema(path: Path) -> Object | StrEnum:
+def load_schema(path: Path) -> SchemaRootType:
     """
     Load a schema from a file.
     """
     try:
-        return TypeAdapter(Union[Object, StrEnum]).validate_json(path.read_text())  # type: ignore[return-value]
+        return TypeAdapter(SchemaRootType).validate_json(path.read_text())  # type: ignore[return-value]
     except ValidationError as error:
         logger.error("Could not load schema from %s:", path, exc_info=error)
         raise

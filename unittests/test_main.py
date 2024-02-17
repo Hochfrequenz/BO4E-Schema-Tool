@@ -7,8 +7,9 @@ from unittest.mock import Mock, patch
 
 import pytest
 import requests_mock
+from click.testing import CliRunner
 
-from bost.__main__ import main
+from bost.__main__ import main, main_command_line
 from bost.schema import Object, StrEnum, String
 
 if TYPE_CHECKING:
@@ -22,6 +23,18 @@ TEST_DATA_DIR = Path(__file__).parent / "test_data"
 
 
 class TestMain:
+    def test_main_help(self):
+        """
+        If you are modifying the CLI help description, please execute this test and update the README.md by copying
+        the output of this test into the README.md.
+        """
+        cli_runner = CliRunner()
+        result = cli_runner.invoke(main_command_line, ["--help"])
+        print("\n")
+        print(result.output.replace("Usage: main-command-line", "Usage: bost"))
+        assert result.exit_code == 0
+        assert "Usage: main" in result.output
+
     def test_main_without_mocks(self):
         pytest.skip("Unmocked test is skipped in CI")
         main(

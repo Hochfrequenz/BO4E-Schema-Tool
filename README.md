@@ -40,8 +40,12 @@ Options:
   -c, --config-file FILE          Path to the config file
   -r, --update-refs / -R, --no-update-refs
                                   Automatically update the references in the
-                                  schema files - github URLs are replaced with
-                                  relative paths
+                                  schema files. Online references to the BO4E
+                                  schemas will be replaced by relative paths.
+                                  References to $definitions or $defs must
+                                  exists as explicit schemas in the namespace as
+                                  well and will be replaced by relative paths to
+                                  them. The definitions will be removed.
   -d, --set-default-version / -D, --no-set-default-version
                                   Automatically set or overrides the default
                                   version for '_version' fields with --target-
