@@ -16,7 +16,7 @@ from requests import Response
 from bost.cache import CACHE_FILE_NAME, CacheData, get_cached_file, get_cached_file_tree, save_cache
 from bost.config import Config
 from bost.logger import logger
-from bost.schema import Object, Reference, SchemaRootType, StrEnum
+from bost.schema import Object, Reference, SchemaRootType
 
 OWNER = "bo4e"
 REPO = "BO4E-Schemas"

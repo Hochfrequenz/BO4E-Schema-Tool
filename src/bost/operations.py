@@ -104,7 +104,7 @@ def update_reference(field: Reference, schema: SchemaMetadata, schemas: dict[str
             )
             break
 
-    logger.debug("Updated reference $s to: %s", field.ref, relative_ref)
+    logger.debug("Updated reference %s to: %s", field.ref, relative_ref)
     field.ref = relative_ref
 
 
