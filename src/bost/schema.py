@@ -8,7 +8,7 @@ from typing import Annotated
 from typing import Any as _Any
 from typing import Literal, Optional, Union
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 
 
 class TypeBase(BaseModel):
@@ -19,6 +19,21 @@ class TypeBase(BaseModel):
     description: str = ""
     title: str = ""
     default: _Any = None
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class SchemaRootTypeBase(BaseModel):
+    """
+    This pydantic class models the base of a root type definition in a json schema validation file.
+    The root type may contain special keys like "$defs" or "$schema". Currently, only "$defs" is supported.
+    """
+
+    defs: dict[str, "SchemaClassType"] = Field(
+        validation_alias=AliasChoices("$defs", "$definitions"),
+        serialization_alias="$defs",
+        default_factory=dict,
+    )
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -41,6 +56,18 @@ class StrEnum(TypeBase):
 
     enum: list[str]
     type: Literal["string"]
+
+
+class SchemaRootObject(Object, SchemaRootTypeBase):
+    """
+    This pydantic class models the root of a json schema validation file as an object type.
+    """
+
+
+class SchemaRootStrEnum(StrEnum, SchemaRootTypeBase):
+    """
+    This pydantic class models the root of a json schema validation file as an enum type.
+    """
 
 
 class Array(TypeBase):
@@ -156,4 +183,8 @@ class Reference(TypeBase):
 SchemaType = Union[
     Object, StrEnum, Array, AnyOf, AllOf, String, Number, Decimal, Integer, Boolean, Null, Reference, Any
 ]
-SchemaRootType = Union[Object, StrEnum]
+SchemaClassType = Union[Object, StrEnum]
+SchemaRootType = Union[SchemaRootObject, SchemaRootStrEnum]
+SchemaRootTypeBase.model_rebuild()
+SchemaRootObject.model_rebuild()
+SchemaRootStrEnum.model_rebuild()

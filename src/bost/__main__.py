@@ -42,7 +42,10 @@ from bost.schema import AnyOf, Object, StrEnum
 @click.option(
     "--update-refs/--no-update-refs",
     "-r/-R",
-    help="Automatically update the references in the schema files - github URLs are replaced with relative paths",
+    help="Automatically update the references in the schema files. "
+    "Online references to the BO4E schemas will be replaced by relative paths. "
+    "References to $definitions or $defs must exists as explicit schemas in the namespace as well and "
+    "will be replaced by relative paths to them. The definitions will be removed.",
     is_flag=True,
     default=True,
 )
@@ -79,6 +82,8 @@ from bost.schema import AnyOf, Object, StrEnum
     default=None,
     envvar="GITHUB_ACCESS_TOKEN",
 )
+# If you are modifying any of the help descriptions, please execute the test test_main.py -> test_main_help().
+# Update the README.md by copying the output of this test into the README.md.
 @click.version_option(package_name="BO4E-Schema-Tool")
 def main_command_line(*args, **kwargs) -> None:
     """
@@ -218,7 +223,11 @@ def main(
 
     if update_refs:
         for schema in schemas.values():
-            update_references(schema.schema_parsed, schema.module_path)
+            update_references(schema, schemas, target_version)
+            schema.schema_parsed.defs = {}
+            schema.schema_parsed.__pydantic_fields_set__.discard("defs")
+            # When updating the references, the definitions are not needed anymore since they are replaced
+            # by relative references.
         logger.info("Updated github references")
 
     if set_default_version:

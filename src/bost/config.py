@@ -9,7 +9,7 @@ from typing import Annotated, Literal, Union
 from pydantic import BaseModel, Field, TypeAdapter, field_validator
 
 from bost.logger import logger
-from bost.schema import Object, Reference, SchemaType, StrEnum
+from bost.schema import Reference, SchemaRootObject, SchemaRootStrEnum, SchemaType
 
 
 class AdditionalField(BaseModel):
@@ -61,7 +61,7 @@ class AdditionalModel(BaseModel):
     """
 
     module: Literal["bo", "com", "enum"]
-    schema_parsed: Annotated[Object | StrEnum | Reference, Field(alias="schema")]
+    schema_parsed: Annotated[SchemaRootObject | SchemaRootStrEnum | Reference, Field(alias="schema")]
 
 
 class Config(BaseModel):

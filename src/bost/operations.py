@@ -7,6 +7,7 @@ import re
 from more_itertools import first_true
 
 from bost.logger import logger
+from bost.pull import OWNER, REPO, SchemaMetadata
 from bost.schema import AllOf, AnyOf, Array, Null, Object, Reference, SchemaType, StrEnum
 
 
@@ -50,34 +51,64 @@ def add_additional_enum_items(obj: StrEnum, additional_items: list[str]) -> StrE
     return obj
 
 
-REF_REGEX = re.compile(r"src/bo4e_schemas/(.*/|)(\w+)\.json(#.*)?")
+# GH_VERSION_REGEX = re.compile(r"^v(\d+\.\d+\.\d+)(-rc\d+)?$")
+REF_ONLINE_REGEX = re.compile(
+    rf"^https://raw\.githubusercontent\.com/(?:{OWNER.upper()}|{OWNER.lower()}|Hochfrequenz)/{REPO}/"
+    r"(?P<version>v\d+\.\d+\.\d+(?:-rc\d+)?)/"
+    r"src/bo4e_schemas/(?P<sub_path>(?:\w+/)*)(?P<model>\w+)\.json#?$"
+)
+# e.g. https://raw.githubusercontent.com/BO4E/BO4E-Schemas/v202401.1.0-rc1/src/bo4e_schemas/bo/Angebot.json
+REF_DEFS_REGEX = re.compile(r"^#/\$(?:defs|definitions)/(?P<model>\w+)$")
 
 
-def update_reference(field: Reference, own_module: tuple[str, ...]):
+def update_reference(field: Reference, schema: SchemaMetadata, schemas: dict[str, SchemaMetadata], version: str):
     """
-    Update a reference to a schema file by replacing a URL reference with a relative path.
-    Example of the old reference:
-    https://raw.githubusercontent.com/Hochfrequenz/BO4E-Schemas/v0.6.1-rc13/src/bo4e_schemas/enum/AbgabeArt.json
+    Update a reference to a schema file by replacing a URL reference or reference to definitions with a relative path
+    to the schema file. If using references to definitions, the schema file must be in the namespace.
+    Example of online reference:
+    https://raw.githubusercontent.com/BO4E/BO4E-Schemas/v202401.1.0-rc1/src/bo4e_schemas/bo/Angebot.json
+    Example of reference to definitions:
+    #/$defs/Angebot
     """
-    match = REF_REGEX.search(field.ref)
-    if match is None:
-        logger.info("Reference unchanged. Could not parse reference: %s", field.ref)
-        return
+    match = REF_ONLINE_REGEX.search(field.ref)
+    if match is not None:
+        logger.debug("Matched online reference: %s", field.ref)
+        if match.group("version") != version:
+            raise ValueError(
+                "Version mismatch: References across different versions of BO4E are not allowed. "
+                f"{match.group('version')} does not match {version} for reference {field.ref}"
+            )
+        if match.group("sub_path") is not None:
+            reference_module_path = [*match.group("sub_path").split("/")[:-1], match.group("model")]
+        else:
+            reference_module_path = [match.group("model")]
+    else:
+        match = REF_DEFS_REGEX.search(field.ref)
+        if match is not None:
+            logger.debug("Matched reference to definitions: %s", field.ref)
+            if match.group("model") not in schemas:
+                raise ValueError(
+                    f"Could not find schema for reference {field.ref} in namespace "
+                    f"{set(schema_el.module_path for schema_el in schemas.values())}"
+                )
+            reference_module_path = list(schemas[match.group("model")].module_path)
+        else:
+            logger.info("Reference unchanged. Could not parse reference: %s", field.ref)
+            return
 
-    reference_module_path = match.group(1).split("/")
-    reference_module_path[-1] = match.group(2)
     relative_ref = "#"
-    for ind, (part, own_part) in enumerate(zip(reference_module_path, own_module)):
+    for ind, (part, own_part) in enumerate(zip(reference_module_path, schema.module_path)):
         if part != own_part:
-            relative_ref = "../" * (len(own_module) - ind - 1) + "/".join(reference_module_path[ind:]) + ".json#"
+            relative_ref = (
+                "../" * (len(schema.module_path) - ind - 1) + "/".join(reference_module_path[ind:]) + ".json#"
+            )
             break
-    if match.group(3) is not None:
-        relative_ref += match.group(3)
 
+    logger.debug("Updated reference %s to: %s", field.ref, relative_ref)
     field.ref = relative_ref
 
 
-def update_references(obj: SchemaType, own_module: tuple[str, ...]):
+def update_references(schema: SchemaMetadata, schemas: dict[str, SchemaMetadata], version: str):
     """
     Update all references in a schema object. Iterates through the whole structure and calls `update_reference`
     on every Reference object.
@@ -93,7 +124,7 @@ def update_references(obj: SchemaType, own_module: tuple[str, ...]):
         elif isinstance(_object, Array):
             iter_array(_object)
         elif isinstance(_object, Reference):
-            update_reference(_object, own_module)
+            update_reference(_object, schema, schemas, version)
 
     def iter_object(_object: Object):
         for prop in _object.properties.values():
@@ -110,4 +141,4 @@ def update_references(obj: SchemaType, own_module: tuple[str, ...]):
     def iter_array(_object: Array):
         update_or_iter(_object.items)
 
-    update_or_iter(obj)
+    update_or_iter(schema.schema_parsed)
