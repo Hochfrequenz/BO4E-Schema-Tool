@@ -265,9 +265,6 @@ def get_schema_list(version: str, cache_dir: Path | None, token: str | None) -> 
     return schemas
 
 
-SCHEMA_CACHE: dict[tuple[str, ...], SchemaMetadata] = {}
-
-
 def schema_iterator(
     version: str, output: Path, cache_dir: Path | None, token: str | None
 ) -> Iterable[tuple[str, SchemaMetadata]]:
@@ -282,16 +279,15 @@ def schema_iterator(
             continue
         relative_path = Path(file.path).relative_to("src/bo4e_schemas")
         module_path = file.module_path
-        if module_path not in SCHEMA_CACHE:
-            SCHEMA_CACHE[module_path] = SchemaMetadata(
-                class_name=relative_path.stem,
-                download_url=file.download_url,
-                module_path=module_path,
-                file_path=output / relative_path,
-                cached_path=get_cached_file(relative_path, cache_dir),
-                token=token,
-            )
-        yield SCHEMA_CACHE[module_path].class_name, SCHEMA_CACHE[module_path]
+        schema_meta = SchemaMetadata(
+            class_name=relative_path.stem,
+            download_url=file.download_url,
+            module_path=module_path,
+            file_path=output / relative_path,
+            cached_path=get_cached_file(relative_path, cache_dir),
+            token=token,
+        )
+        yield schema_meta.class_name, schema_meta
 
 
 def load_schema(path: Path) -> SchemaRootType:
