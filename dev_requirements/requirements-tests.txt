@@ -18,7 +18,7 @@ pluggy==1.5.0
     # via pytest
 pytest==8.2.1
     # via -r dev_requirements/requirements-tests.in
-requests==2.31.0
+requests==2.32.3
     # via requests-mock
 requests-mock==1.12.1
     # via -r dev_requirements/requirements-tests.in
