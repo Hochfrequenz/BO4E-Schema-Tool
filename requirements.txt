@@ -22,7 +22,7 @@ deprecated==1.2.14
     # via pygithub
 idna==3.4
     # via requests
-more-itertools==10.2.0
+more-itertools==10.3.0
     # via -r requirements.in
 pycparser==2.21
     # via cffi
