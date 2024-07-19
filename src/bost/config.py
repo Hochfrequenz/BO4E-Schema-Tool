@@ -69,16 +69,16 @@ class Config(BaseModel):
     The config file model
     """
 
-    required_fields: Annotated[list[str], Field(alias="requiredFields", default_factory=list)]
+    non_nullable_fields: Annotated[list[str], Field(alias="nonNullableFields", default_factory=list)]
     additional_fields: Annotated[
         list[AdditionalField | Reference], Field(alias="additionalFields", default_factory=list)
     ]
     additional_enum_items: Annotated[list[AdditionalEnumItem], Field(alias="additionalEnumItems", default_factory=list)]
     additional_models: Annotated[list[AdditionalModel], Field(alias="additionalModels", default_factory=list)]
 
-    @field_validator("required_fields")
+    @field_validator("non_nullable_fields")
     @classmethod
-    def validate_required_field_patterns(cls, required_fields):
+    def validate_non_nullable_field_patterns(cls, required_fields):
         """
         Validates if the patterns are compilable as a regular expression
         """

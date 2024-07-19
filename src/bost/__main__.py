@@ -11,9 +11,9 @@ import click
 from bost.cache import is_cache_dir_valid
 from bost.config import AdditionalEnumItem, AdditionalField, load_config
 from bost.logger import logger
-from bost.operations import add_additional_enum_items, add_additional_property, optional_to_required, update_references
+from bost.operations import add_additional_enum_items, add_additional_property, field_to_non_nullable, update_references
 from bost.pull import SchemaMetadata, additional_schema_iterator, resolve_latest_version, schema_iterator
-from bost.schema import AnyOf, Object, StrEnum
+from bost.schema import AnyOf, Object, SchemaRootObject, StrEnum
 
 
 @click.command()
@@ -92,7 +92,7 @@ def main_command_line(*args, **kwargs) -> None:
     main(*args, **kwargs)
 
 
-def transform_all_required_fields(required_field_patters: list[str], schemas: dict[str, SchemaMetadata]):
+def transform_all_non_nullable_fields(required_field_patters: list[str], schemas: dict[str, SchemaMetadata]):
     """
     Apply the required field patterns to all schemas.
     """
@@ -107,18 +107,12 @@ def transform_all_required_fields(required_field_patters: list[str], schemas: di
         for field_path, field_name, schema in field_paths:
             if (
                 compiled_pattern.fullmatch(field_path)
-                and isinstance(schema.schema_parsed, Object)
+                and isinstance(schema.schema_parsed, SchemaRootObject)
                 and isinstance(schema.schema_parsed.properties[field_name], AnyOf)
                 and "default" in schema.schema_parsed.properties[field_name].__pydantic_fields_set__
             ):
                 matches += 1
-                schema.schema_parsed.properties[field_name] = optional_to_required(
-                    schema.schema_parsed.properties[field_name]  # type: ignore[arg-type]
-                )
-                if field_name not in schema.schema_parsed.required:
-                    if "required" not in schema.schema_parsed.__pydantic_fields_set__:
-                        schema.schema_parsed.required = []
-                    schema.schema_parsed.required.append(field_name)
+                field_to_non_nullable(schema.schema_parsed, field_name)
                 logger.info("Applied pattern '%s' to field %s", pattern, field_path)
         if matches == 0:
             logger.warning("Pattern '%s' did not match any fields", pattern)
@@ -213,11 +207,11 @@ def main(
     if config is not None:
         schemas.update(additional_schema_iterator(config, config_file, output))
         logger.info("Added all additional models")
-        transform_all_required_fields(config.required_fields, schemas)
-        logger.info("Transformed all required fields")
         transform_all_additional_fields(config.additional_fields, schemas)  # type: ignore[arg-type]
         # the load_config function ensures that the references are resolved.
         logger.info("Added all additional fields")
+        transform_all_non_nullable_fields(config.non_nullable_fields, schemas)
+        logger.info("Transformed all non nullable fields")
         transform_all_additional_enum_items(config.additional_enum_items, schemas)
         logger.info("Added all additional enum items")
 

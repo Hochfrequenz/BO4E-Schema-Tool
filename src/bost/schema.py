@@ -46,7 +46,7 @@ class Object(TypeBase):
     additional_properties: Annotated[Literal[True, False], Field(alias="additionalProperties")] = False
     properties: dict[str, "SchemaType"]
     type: Literal["object"]
-    required: list[str] = []
+    required: list[str] = Field(default_factory=list)
 
 
 class StrEnum(TypeBase):

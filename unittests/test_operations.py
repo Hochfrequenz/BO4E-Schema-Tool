@@ -4,7 +4,7 @@ from unittest.mock import Mock
 from more_itertools import one
 
 from bost.config import AdditionalField, load_config
-from bost.operations import add_additional_property, optional_to_required, update_reference, update_references
+from bost.operations import add_additional_property, field_to_non_nullable, update_reference, update_references
 from bost.pull import SchemaMetadata
 from bost.schema import Object, Reference, SchemaRootObject, String
 
@@ -51,28 +51,27 @@ class TestOperations:
 
         assert bar_schema.properties["foo"].ref == "../com/Foo.json#"
 
-    def test_optional_to_required_with_default(self):
-        angebot = Object.model_validate_json(
+    def test_field_to_non_nullable_with_default(self):
+        angebot = SchemaRootObject.model_validate_json(
             (Path(__file__).parent / "test_data/bo4e_schemas/bo/Angebot.json").read_text()
         )
-        example_field = angebot.properties["_version"]
-        new_field = optional_to_required(example_field)
+        field_to_non_nullable(angebot, "_version")
+        new_field = angebot.properties["_version"]
 
         assert isinstance(new_field, String)
         assert new_field.default == "0.6.1rc13"
-        assert example_field.title == new_field.title
+        assert "_version" not in angebot.required
 
-    def test_optional_to_required_without_default(self):
-        angebot = Object.model_validate_json(
+    def test_field_to_non_nullable_without_default(self):
+        angebot = SchemaRootObject.model_validate_json(
             (Path(__file__).parent / "test_data/bo4e_schemas/bo/Angebot.json").read_text()
         )
-        example_field = angebot.properties["angebotsdatum"]
-        new_field = optional_to_required(example_field)
+        field_to_non_nullable(angebot, "angebotsdatum")
+        new_field = angebot.properties["angebotsdatum"]
 
         assert isinstance(new_field, String)
         assert new_field.default is None
         assert "default" not in new_field.__pydantic_fields_set__
-        assert example_field.title == new_field.title
         assert new_field.format == "date-time"
 
     def test_add_additional_property(self):
