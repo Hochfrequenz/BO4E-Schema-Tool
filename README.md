@@ -14,7 +14,7 @@ Additionally, it supports some features to edit those schemas which can be defin
 - Pull BO4E-Schemas of arbitrary versions
   - references in `$ref` will be replaced by relative paths
 - Edit schemas:
-  - Define required properties
+  - Define non nullable properties (in most cases changes it to a required field)
   - Add additional properties (keep in mind that you should avoid this if possible)
   - Add additional models (keep in mind that you should avoid this if possible)
   - All features also apply to Enums
@@ -74,16 +74,16 @@ Here is a complex example of a config file:
 
 ```json
 {
-  "required_fields": [
+  "nonNullableFields": [
     "bo\\.Angebot\\.angebotspreis",
     "(bo|com)\\.\\w+\\._typ",
     "\\w+\\.\\w+\\._id"
   ],
-  "additional_fields": [
+  "additionalFields": [
     {
         "pattern": "bo\\.Angebot",
-        "field_name": "foo",
-        "field_def": {
+        "fieldName": "foo",
+        "fieldDef": {
             "type": "number"
         }
     },
@@ -91,7 +91,7 @@ Here is a complex example of a config file:
       "$ref": "./models/bo/Geschaeftspartner_extension.json"
     }
   ],
-  "additional_enum_items": [
+  "additionalEnumItems": [
     {
       "pattern": "enum\\.BoTyp",
       "items": [
@@ -100,7 +100,7 @@ Here is a complex example of a config file:
       ]
     }
   ],
-  "additional_models": [
+  "additionalModels": [
     {
       "module": "bo",
       "schema": {
@@ -140,28 +140,29 @@ Here is a complex example of a config file:
 ```
 
 The config file can contain the following keys:
-- `required_fields`: A list of regex patterns which will be used to define required fields.
+- `nonNullabelFields`: A list of regex patterns which will be used to define non-nullable fields.
+  The field will be required if the default value was `null`, which will be mostly the case.
   The regex pattern will be (full-)matched to the path of each the field.
-  An example of such a path would be `bo.Angebot.angebotspreis`. If the pattern matches, the field will be required.
-- `additional_fields`: A list of additional fields which will be added to the schema.
+  An example of such a path would be `bo.Angebot.angebotspreis`. If the pattern matches, the field will be non-nullable.
+- `additionalFields`: A list of additional fields which will be added to the schema.
   - `pattern`: A regex pattern which will be used to match the path of the schema (e.g. `bo.Angebot`).
     The field will be added to each schema to which the pattern matches.
-  - `field_name`: The name of the field which will be added.
-  - `field_def`: The definition of the field which will be added.
-- `additional_enum_items`: A list of additional enum items which will be added to the schema.
+  - `fieldName`: The name of the field which will be added.
+  - `fieldDef`: The definition of the field which will be added.
+- `additionalEnumItems`: A list of additional enum items which will be added to the schema.
   - `pattern`: A regex pattern which will be used to match the path of the enum (e.g. `enum.BoTyp`).
     The items will be added to each enum to which the pattern matches.
   - `items`: A list of items which will be added to the enum.
-- `additional_models`: A list of additional models which will be added to the schema.
+- `additionalModels`: A list of additional models which will be added to the schema.
   - `module`: The module to which the schema will be added.
   - `schema`: The schema definition which will be added.
 
-Note: For all config keys (except `required_fields`), you can alternatively use the `"$ref"` key to reference to a file.
+Note: For all config keys (except `requiredFields`), you can alternatively use the `"$ref"` key to reference to a file.
 This is useful to keep the config file small and to reuse definitions.
 If the path is relative it will be applied to the path of the directory where the config file is stored in.
 But, you can define absolute paths if you want.
 
-As a little extra feature for `additional_fields`: If you want to define multiple fields in one external file,
+As a little extra feature for `additionalFields`: If you want to define multiple fields in one external file,
 you can define a list of fields instead of a single field. The reference in the `"$ref"` key is the same.
 
 Example of `./models/bo/Geschaeftspartner_extension.json`:

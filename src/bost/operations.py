@@ -8,31 +8,39 @@ from more_itertools import first_true
 
 from bost.logger import logger
 from bost.pull import OWNER, REPO, SchemaMetadata
-from bost.schema import AllOf, AnyOf, Array, Null, Object, Reference, SchemaType, StrEnum
+from bost.schema import AllOf, AnyOf, Array, Null, Object, Reference, SchemaRootObject, SchemaType, StrEnum
 
 
-def optional_to_required(optional_field: AnyOf) -> SchemaType:
+def field_to_non_nullable(schema_parsed: SchemaRootObject, field_name: str):
     """
-    Convert an optional field to a required field by removing the Null type.
+    Convert a field which can be null to a field which can't, by removing the Null type.
     If the field is an "AnyOf" field with only one type left (after removing the Null type), the type is reduced to
     the remaining type - i.e. the structure is flattened.
     If the field has a default value of "null", the default value is removed.
     """
-    null_type = first_true(optional_field.any_of, pred=lambda item: isinstance(item, Null), default=None)
-    assert null_type is not None, f"Expected {optional_field} to contain Null"
-    assert "default" in optional_field.__pydantic_fields_set__, f"Expected {optional_field} to have a default"
-    optional_field.any_of.remove(null_type)
-    if optional_field.default is None and "default" in optional_field.__pydantic_fields_set__:
-        optional_field.__pydantic_fields_set__.remove("default")
-    if len(optional_field.any_of) == 1:
+    field_with_null_type = schema_parsed.properties[field_name]
+    assert isinstance(
+        field_with_null_type, AnyOf
+    ), f"Internal error: Expected field to be of type AnyOf but got {type(field_with_null_type)}"
+    null_type = first_true(field_with_null_type.any_of, pred=lambda item: isinstance(item, Null), default=None)
+    assert null_type is not None, f"Expected {field_with_null_type} to contain Null"
+    assert (
+        "default" in field_with_null_type.__pydantic_fields_set__
+    ), f"Expected {field_with_null_type} to have a default"
+    field_with_null_type.any_of.remove(null_type)
+    if field_with_null_type.default is None and "default" in field_with_null_type.__pydantic_fields_set__:
+        field_with_null_type.__pydantic_fields_set__.remove("default")
+        if field_name not in schema_parsed.required:
+            schema_parsed.__pydantic_fields_set__.add("required")
+            schema_parsed.required.append(field_name)
+    if len(field_with_null_type.any_of) == 1:
         # If AnyOf has only one item left, we are reducing the type to that item and copying all relevant data from the
         # AnyOf object
-        new_field = optional_field.any_of[0]
-        for key in optional_field.__pydantic_fields_set__:
+        new_field = field_with_null_type.any_of[0]
+        for key in field_with_null_type.__pydantic_fields_set__:
             if hasattr(new_field, key):
-                setattr(new_field, key, getattr(optional_field, key))
-        return new_field
-    return optional_field
+                setattr(new_field, key, getattr(field_with_null_type, key))
+        schema_parsed.properties[field_name] = new_field
 
 
 def add_additional_property(obj: Object, additional_property: SchemaType, property_name: str) -> Object:

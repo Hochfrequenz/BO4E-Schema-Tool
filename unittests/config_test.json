@@ -1,5 +1,5 @@
 {
-  "requiredFields": [
+  "nonNullableFields": [
     "\\w+\\.\\w+\\._(id|version|typ)",
     "bo\\.Angebot\\.angebotsgeber"
   ],
