@@ -6,7 +6,7 @@
 #
 backports-tarfile==1.1.0
     # via jaraco-context
-build==1.2.1
+build==1.2.2
     # via -r dev_requirements/requirements-packaging.in
 certifi==2024.2.2
     # via requests
