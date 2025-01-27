@@ -18,12 +18,12 @@ cryptography==42.0.7
     # via secretstorage
 docutils==0.21.1
     # via readme-renderer
+id==1.5.0
+    # via twine
 idna==3.7
     # via requests
 importlib-metadata==7.1.0
-    # via
-    #   keyring
-    #   twine
+    # via keyring
 jaraco-classes==3.4.0
     # via keyring
 jaraco-context==5.3.0
@@ -47,9 +47,9 @@ more-itertools==10.5.0
 nh3==0.2.17
     # via readme-renderer
 packaging==24.0
-    # via build
-pkginfo==1.10.0
-    # via twine
+    # via
+    #   build
+    #   twine
 pycparser==2.22
     # via cffi
 pygments==2.17.2
@@ -62,6 +62,7 @@ readme-renderer==43.0
     # via twine
 requests==2.32.3
     # via
+    #   id
     #   requests-toolbelt
     #   twine
 requests-toolbelt==1.0.0
@@ -72,7 +73,7 @@ rich==13.7.1
     # via twine
 secretstorage==3.3.3
     # via keyring
-twine==5.1.1
+twine==6.1.0
     # via -r dev_requirements/requirements-packaging.in
 urllib3==2.2.1
     # via
